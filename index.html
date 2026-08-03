@@ -332,7 +332,7 @@
   const GROUP_LABEL = { calisthenics: 'Calisthenics', abs: 'Abs', cardio: 'Swim & Run', health: 'Health' };
 
   const DEFAULT_PLANS = {
-    pushups:  { id: 'volume', daily: 200, test: 100 },
+    pushups:  { id: 'volume', daily: 300, test: 100 },
     pullups:  { id: 'armstrong', ws: 5 },
     situps:   { id: 'volume', daily: 150, test: 100 },
     plank:    { id: 'plank', daily: 240, test: 270 },
@@ -343,7 +343,7 @@
   function defaultState() {
     const mk = (name, kind, unit, goal, quick, group, plan) => ({ id: uid(), name, kind, unit, goal, quick, group, plan: plan ? { ...plan } : undefined, created: Date.now() });
     return {
-      v: 9,
+      v: 10,
       activities: [
         mk('Pushups',       'count',    'reps', null, [10, 20, 30],     'calisthenics', DEFAULT_PLANS.pushups),
         mk('Pull-ups',      'count',    'reps', null, [5, 10],          'calisthenics', DEFAULT_PLANS.pullups),
@@ -433,6 +433,11 @@
     if (s.v < 9) {
       s.activities.forEach(a => { if (a.plan) delete a.plan.cap; });
       s.v = 9;
+    }
+    if (s.v < 10) {
+      const pu = s.activities.find(a => /push/i.test(a.name));
+      if (pu && pu.plan && pu.plan.id === 'volume') pu.plan.daily = 300;
+      s.v = 10;
     }
     s.tests = s.tests || [];
     s.activities.forEach(a => { if (!a.group || !GROUPS.includes(a.group)) a.group = guessGroup(a); });
@@ -525,11 +530,11 @@
     }
     return { total, days };
   }
-  function adaptVolume(act, p, key, roundTo, floor) {
+  function adaptVolume(act, p, key, roundTo) {
     const { total, days } = prevWeekStats(act, key, [1, 2, 3, 4, 5]);
     if (days < 2) return p.daily;
     const next = Math.round((total / days) * 1.05 / roundTo) * roundTo;   // +5% on what you actually did
-    return Math.max(floor, next);                                          // no ceiling — room to grow
+    return Math.max(p.daily, next);                    // baseline is the floor; no ceiling — room to grow
   }
   function weekFactor(act, key, baseWeekTotal) {
     const { total } = prevWeekStats(act, key, null);
@@ -554,13 +559,13 @@
     volume(p, dow, act, key) {
       if (dow === 0) return { goal: null, label: 'Rest day', detail: 'Full recovery before the new week.' };
       if (dow === 6) return { goal: p.test, label: '2-minute max test', detail: 'One all-out 2-minute set. Log the result and watch it climb toward ' + p.test + '.' };
-      const daily = adaptVolume(act, p, key, 5, 50);
+      const daily = adaptVolume(act, p, key, 5);
       return { goal: daily, label: 'Volume day — ' + daily + ' reps', detail: 'Grease the groove: sub-max sets spread across the day. Auto-adjusts +5% off what you actually did last week.' };
     },
     plank(p, dow, act, key) {
       if (dow === 0) return { goal: null, label: 'Rest day', detail: 'Core recovers fast, but take one day off.' };
       if (dow === 6) return { goal: p.test, label: 'Max hold test', detail: 'One max-effort hold with perfect form. Target ' + secs(p.test) + '.' };
-      const daily = adaptVolume(act, p, key, 10, 120);
+      const daily = adaptVolume(act, p, key, 10);
       return { goal: daily, label: 'Accumulate ' + secs(daily), detail: '3–5 holds, 30–60 sec rest. Grows ~5% weekly off your actual log; stop each hold before form breaks.' };
     },
     run(p, dow, act, key) {
