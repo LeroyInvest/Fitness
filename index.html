@@ -229,6 +229,15 @@
     font-family: "Avenir Next Condensed", "Helvetica Neue Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif; }
   .tile .tu { font-size: 12.5px; color: var(--ink-2); font-weight: 600; }
 
+  .seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--hairline); border-radius: 999px; padding: 2px; }
+  .seg button {
+    border: 0; background: transparent; color: var(--ink-2); font-weight: 700; font-size: 13px;
+    padding: 5px 14px; border-radius: 999px; cursor: pointer; letter-spacing: .02em;
+  }
+  .seg button.sel { background: var(--accent); color: #fff; }
+  :root[data-theme="dark"] .seg button.sel { color: #08262a; }
+  @media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) .seg button.sel { color: #08262a; } }
+
   .chartwrap { overflow-x: auto; }
   .chart-title { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
   .chart-title .ct { font-weight: 700; font-size: 14.5px; }
@@ -622,10 +631,14 @@
     });
 
     let xlabels = '';
-    for (let i = keys.length - 1; i >= 0; i -= 7) {
+    const step = keys.length <= 7 ? 1 : 7;
+    for (let i = keys.length - 1; i >= 0; i -= step) {
       const d = keyToDate(keys[i]);
       const x = PADL + i * (plotW / keys.length) + bw / 2;
-      xlabels += `<text x="${x}" y="${VB_H - 8}" text-anchor="middle" font-size="10" fill="var(--muted)">${d.getMonth() + 1}/${d.getDate()}</text>`;
+      const lbl = keys.length <= 7
+        ? d.toLocaleDateString(undefined, { weekday: 'short' })
+        : (d.getMonth() + 1) + '/' + d.getDate();
+      xlabels += `<text x="${x}" y="${VB_H - 8}" text-anchor="middle" font-size="10" fill="var(--muted)">${lbl}</text>`;
     }
 
     const grid = yTicks(maxV).map(t =>
@@ -704,6 +717,9 @@
     const chips = `<div class="chips">` + acts.map(a =>
       `<button class="chip ${a.id === sel.id ? 'sel' : ''}" data-action="pick-act" data-act="${a.id}">${esc(a.name)}</button>`).join('') + `</div>`;
 
+    const range = state.ui.range === 'week' ? 'week' : 'month';
+    const days = range === 'week' ? 7 : 30;
+    const rangeKeys = lastNDays(days);
     const keys30 = lastNDays(30);
     const today = dayValue(sel, todayKey());
     const isMeasure = sel.kind === 'measure';
@@ -725,16 +741,20 @@
     } else {
       const vals7 = lastNDays(7).map(k => dayValue(sel, k) || 0);
       const week = vals7.reduce((a,b) => a+b, 0);
-      const best = Math.max(0, ...keys30.map(k => dayValue(sel, k) || 0));
+      const best = Math.max(0, ...rangeKeys.map(k => dayValue(sel, k) || 0));
       tiles = `<div class="tiles">
         <div class="tile"><div class="tv">${fmt(today || 0)}</div><div class="tk">Today</div><div class="tu">${esc(sel.unit)}</div></div>
         <div class="tile"><div class="tv">${fmt(week)}</div><div class="tk">Last 7 days</div><div class="tu">${esc(sel.unit)}</div></div>
-        <div class="tile"><div class="tv">${fmt(best)}</div><div class="tk">Best day (30d)</div><div class="tu">${esc(sel.unit)}</div></div>
+        <div class="tile"><div class="tv">${fmt(best)}</div><div class="tk">Best day (${days}d)</div><div class="tu">${esc(sel.unit)}</div></div>
         <div class="tile"><div class="tv">${sel.goal != null ? streak(sel) : '–'}</div><div class="tk">Goal streak</div><div class="tu">${sel.goal != null ? 'days' : 'no goal set'}</div></div>
       </div>`;
     }
 
-    const chart = isMeasure ? lineChart(sel, lastNDays(60)) : barChart(sel, keys30);
+    const chart = isMeasure ? lineChart(sel, rangeKeys) : barChart(sel, rangeKeys);
+    const seg = `<span class="seg" role="group" aria-label="Chart range">
+      <button class="${range === 'week' ? 'sel' : ''}" data-action="set-range" data-range="week">Week</button>
+      <button class="${range === 'month' ? 'sel' : ''}" data-action="set-range" data-range="month">Month</button>
+    </span>`;
 
     const recent = state.entries.filter(e => e.actId === sel.id).sort((a,b) => b.ts - a.ts).slice(0, 15);
     const logRows = recent.map(e => {
@@ -748,8 +768,7 @@
       ${chips}
       ${tiles}
       <section class="card">
-        <div class="chart-title"><span class="ct">${esc(sel.name)} — ${isMeasure ? 'last 60 days' : 'daily total, last 30 days'}</span>
-        <span class="cs">${esc(sel.unit)}</span></div>
+        <div class="chart-title"><span class="ct">${esc(sel.name)} — ${isMeasure ? 'trend' : 'daily total'}, last ${days} days</span>${seg}</div>
         <div class="chartwrap">${chart}</div>
       </section>
       <section class="card">
@@ -899,6 +918,7 @@
       $('#toast').style.display = 'none';
     }
     else if (act === 'pick-act') { state.ui.progressAct = el.dataset.act; save(); render(); }
+    else if (act === 'set-range') { state.ui.range = el.dataset.range; save(); render(); }
     else if (act === 'save-act') {
       const row = el.closest('[data-actrow]');
       const a = actById(el.dataset.act);
