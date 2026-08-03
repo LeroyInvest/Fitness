@@ -712,7 +712,7 @@
     if (sel) bar.scrollLeft = Math.max(0, sel.offsetLeft - (bar.clientWidth - sel.offsetWidth) / 2);
   }
 
-  function render() {
+  function render(scrollTop) {
     const tab = resolveTab();
     renderNav(tab);
     $('#topDate').textContent = dateLong();
@@ -720,7 +720,7 @@
     else if (tab === 'health') renderHealth();
     else if (tab === 'standards') renderStandards();
     else renderActivity(actById(tab));
-    window.scrollTo(0, 0);
+    if (scrollTop) window.scrollTo(0, 0);   // only on tab switches — in-place updates keep your spot
   }
 
   /* ---------- TODAY ---------- */
@@ -1354,7 +1354,7 @@
 
   document.addEventListener('click', ev => {
     const tab = ev.target.closest('nav.tabs button');
-    if (tab) { state.ui.tab = tab.dataset.tab; save(); render(); return; }
+    if (tab) { state.ui.tab = tab.dataset.tab; save(); render(true); return; }
 
     const el = ev.target.closest('[data-action]');
     if (!el) return;
