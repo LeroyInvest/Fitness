@@ -2,90 +2,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>
   :root {
-    --bg: #F1F4F3;
-    --surface: #FBFCFC;
-    --surface-2: #E8EDEB;
-    --ink: #152220;
-    --ink-2: #4D5C58;
-    --muted: #7E8A86;
-    --hairline: #DFE5E3;
-    --grid: #E3E8E6;
-    --accent: #008DA3;
-    --accent-deep: #006D80;
-    --accent-soft: #DAEDF1;
-    --accent-ink: #00566A;
-    --good: #0ca30c;
-    --good-text: #006300;
-    --good-soft: #E2F2E2;
-    --danger: #C43D3D;
-    --danger-soft: #F6E4E4;
-    --shadow: 0 1px 2px rgba(21,34,32,.06), 0 4px 14px rgba(21,34,32,.05);
-    color-scheme: light;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:where(:not([data-theme="light"])) {
-      --bg: #0C1210;
-      --surface: #151C1A;
-      --surface-2: #1D2523;
-      --ink: #EEF3F1;
-      --ink-2: #AEBAB6;
-      --muted: #7E8A86;
-      --hairline: #242D2A;
-      --grid: #212926;
-      --accent: #14A3BE;
-      --accent-deep: #4FC2D8;
-      --accent-soft: rgba(20,163,190,.16);
-      --accent-ink: #8ED8E6;
-      --good: #0ca30c;
-      --good-text: #4CC670;
-      --good-soft: rgba(12,163,12,.16);
-      --danger: #E06666;
-      --danger-soft: rgba(224,102,102,.14);
-      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25);
-      color-scheme: dark;
-    }
-  }
-  :root[data-theme="dark"] {
-    --bg: #0C1210;
-    --surface: #151C1A;
-    --surface-2: #1D2523;
-    --ink: #EEF3F1;
-    --ink-2: #AEBAB6;
-    --muted: #7E8A86;
-    --hairline: #242D2A;
-    --grid: #212926;
-    --accent: #14A3BE;
-    --accent-deep: #4FC2D8;
-    --accent-soft: rgba(20,163,190,.16);
-    --accent-ink: #8ED8E6;
+    --bg: #0C0D0F;
+    --surface: #16181B;
+    --surface-2: #22252A;
+    --surface-3: #2C3037;
+    --ink: #F2F3F5;
+    --ink-2: #B4BAC3;
+    --muted: #7F868F;
+    --hairline: #262A30;
+    --grid: #23262B;
+    --accent: #3987E5;
+    --accent-deep: #5C9EEA;
+    --accent-soft: rgba(57,135,229,.15);
+    --accent-ink: #8FBCF0;
+    --red: #E05252;
+    --red-ink: #F08A8A;
+    --red-soft: rgba(224,82,82,.14);
     --good: #0ca30c;
     --good-text: #4CC670;
-    --good-soft: rgba(12,163,12,.16);
-    --danger: #E06666;
-    --danger-soft: rgba(224,102,102,.14);
-    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 14px rgba(0,0,0,.25);
+    --good-soft: rgba(12,163,12,.15);
+    --danger: #E05252;
+    --danger-soft: rgba(224,82,82,.14);
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.35);
     color-scheme: dark;
-  }
-  :root[data-theme="light"] {
-    --bg: #F1F4F3;
-    --surface: #FBFCFC;
-    --surface-2: #E8EDEB;
-    --ink: #152220;
-    --ink-2: #4D5C58;
-    --muted: #7E8A86;
-    --hairline: #DFE5E3;
-    --grid: #E3E8E6;
-    --accent: #008DA3;
-    --accent-deep: #006D80;
-    --accent-soft: #DAEDF1;
-    --accent-ink: #00566A;
-    --good: #0ca30c;
-    --good-text: #006300;
-    --good-soft: #E2F2E2;
-    --danger: #C43D3D;
-    --danger-soft: #F6E4E4;
-    --shadow: 0 1px 2px rgba(21,34,32,.06), 0 4px 14px rgba(21,34,32,.05);
-    color-scheme: light;
   }
 
   * { box-sizing: border-box; }
@@ -110,7 +49,7 @@
     font-family: "Avenir Next Condensed", "Helvetica Neue Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
     font-weight: 700; font-size: 20px; letter-spacing: .09em; text-transform: uppercase;
   }
-  .brand .tick { color: var(--accent); }
+  .brand .tick { color: var(--red); }
   #topDate { color: var(--ink-2); font-size: 13.5px; font-weight: 600; white-space: nowrap; }
 
   .eyebrow {
@@ -167,7 +106,7 @@
   .setrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .setchip {
     display: inline-flex; align-items: center; gap: 6px;
-    background: var(--surface-2); border-radius: 999px; padding: 3px 6px 3px 10px;
+    background: var(--surface-3); border-radius: 999px; padding: 3px 6px 3px 10px;
     font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink-2);
   }
   .setchip b { color: var(--ink); font-weight: 700; }
@@ -177,9 +116,31 @@
   }
   .setchip button:hover { color: var(--danger); background: var(--danger-soft); }
 
-  .quickrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .logpanel {
+    background: var(--surface-2); border: 1px solid var(--hairline);
+    border-radius: 12px; padding: 10px 12px 12px; margin-top: 12px;
+  }
+  .lp-label {
+    font-family: "Avenir Next Condensed", "Helvetica Neue Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+    font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700;
+    color: var(--muted); margin-bottom: 4px;
+  }
+  .quickrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .loadrow { margin-top: 8px; }
+  .loadbtn {
+    border: 1px dashed var(--hairline); background: transparent; color: var(--ink-2);
+    font-weight: 600; font-size: 13px; padding: 7px 12px; border-radius: 999px; cursor: pointer;
+  }
+  .loadbtn.on { background: var(--red-soft); border: 1px solid var(--red); color: var(--red-ink); }
+  .loadtag { color: var(--red-ink); font-weight: 700; }
+  .std-vals { display: flex; flex-wrap: wrap; gap: 14px; align-items: baseline; margin: 8px 0 2px; }
+  .stdv { color: var(--ink-2); font-size: 14px; font-variant-numeric: tabular-nums; }
+  .stdv b { color: var(--ink); font-size: 22px; font-weight: 800; }
+  .stdgap { color: var(--red-ink); font-size: 13.5px; font-weight: 600; }
+  .banner.testday { background: var(--red-soft); }
+  .stdform { margin-top: 10px; }
   .qbtn {
-    border: 1px solid var(--hairline); background: var(--surface-2); color: var(--ink);
+    border: 1px solid var(--hairline); background: var(--surface-3); color: var(--ink);
     font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums;
     padding: 9px 14px; border-radius: 10px; cursor: pointer; min-width: 58px;
   }
@@ -194,8 +155,6 @@
     border: 0; background: var(--accent); color: #fff; font-weight: 700; font-size: 15px;
     padding: 9px 16px; border-radius: 10px; cursor: pointer;
   }
-  :root[data-theme="dark"] .qform button { color: #08262a; }
-  @media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) .qform button { color: #08262a; } }
   .qform button:active { transform: scale(.97); }
   input:focus-visible, button:focus-visible, select:focus-visible {
     outline: 2px solid var(--accent); outline-offset: 2px;
@@ -220,8 +179,6 @@
     cursor: pointer; white-space: nowrap;
   }
   .chip.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
-  :root[data-theme="dark"] .chip.sel { color: #08262a; }
-  @media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) .chip.sel { color: #08262a; } }
 
   .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px; }
   @media (max-width: 480px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
@@ -240,8 +197,6 @@
     padding: 5px 14px; border-radius: 999px; cursor: pointer; letter-spacing: .02em;
   }
   .seg button.sel { background: var(--accent); color: #fff; }
-  :root[data-theme="dark"] .seg button.sel { color: #08262a; }
-  @media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) .seg button.sel { color: #08262a; } }
 
   .chartwrap { overflow-x: auto; }
   .chart-title { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
@@ -286,8 +241,6 @@
     font-weight: 700; font-size: 14px; padding: 9px 16px; border-radius: 10px; cursor: pointer;
   }
   .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-  :root[data-theme="dark"] .btn.primary { color: #08262a; }
-  @media (prefers-color-scheme: dark) { :root:where(:not([data-theme="light"])) .btn.primary { color: #08262a; } }
   .btn.danger { color: var(--danger); }
   .btn.danger.armed { background: var(--danger); border-color: var(--danger); color: #fff; }
   .mname { font-weight: 700; font-size: 16px; }
@@ -326,10 +279,9 @@
     box-shadow: 0 4px 18px rgba(0,0,0,.3); max-width: 92vw;
   }
   #toast button {
-    border: 0; background: transparent; color: var(--accent-deep); font-weight: 800;
+    border: 0; background: transparent; color: #1c5cab; font-weight: 800;
     font-size: 14px; cursor: pointer; padding: 2px 4px; letter-spacing: .04em;
   }
-  :root[data-theme="dark"] #toast button { color: var(--accent); }
 
   .empty { text-align: center; color: var(--muted); padding: 28px 10px; font-size: 14.5px; }
   .warnbanner {
@@ -379,10 +331,10 @@
   const GROUP_LABEL = { calisthenics: 'Calisthenics', abs: 'Abs', cardio: 'Swim & Run', health: 'Health' };
 
   const DEFAULT_PLANS = {
-    pushups:  { id: 'volume', daily: 200, test: 100 },
+    pushups:  { id: 'volume', daily: 200, test: 100, cap: 200 },   // NSW guide: <=200/day
     pullups:  { id: 'armstrong', ws: 5 },
-    situps:   { id: 'volume', daily: 150, test: 100 },
-    plank:    { id: 'plank', daily: 240, test: 270 },
+    situps:   { id: 'volume', daily: 150, test: 100, cap: 200 },
+    plank:    { id: 'plank', daily: 240, test: 270, cap: 600 },
     run:      { id: 'run' },
     swim:     { id: 'swim' }
   };
@@ -401,7 +353,8 @@
         mk('Water',         'count',    'oz',   100,  [8, 16, 32],      'health'),
         mk('Body Weight',   'measure',  'lb',   null, [],               'health')
       ],
-      entries: [],   // {id, actId, amount, ts, mins?}
+      entries: [],   // {id, actId, amount, ts, mins?, load?}
+      tests: [],     // {id, ts, key, value}  — Standards test-day results
       ui: { tab: 'calisthenics', progressAct: null }
     };
   }
@@ -454,6 +407,15 @@
       attach(/swim/i,   DEFAULT_PLANS.swim);
       s.v = 5;
     }
+    if (s.v < 6) {
+      s.tests = s.tests || [];
+      s.activities.forEach(a => {
+        if (a.plan && a.plan.id === 'volume' && !a.plan.cap) a.plan.cap = 200;
+        if (a.plan && a.plan.id === 'plank' && !a.plan.cap) a.plan.cap = 600;
+      });
+      s.v = 6;
+    }
+    s.tests = s.tests || [];
     s.activities.forEach(a => { if (!a.group || !GROUPS.includes(a.group)) a.group = guessGroup(a); });
     if (s.ui && s.ui.tab && s.ui.tab !== 'manage' && !GROUPS.includes(s.ui.tab)) s.ui.tab = 'calisthenics';
     return s;
@@ -529,56 +491,117 @@
      run:       zone-2 base + 400m intervals + tempo + long run (3 quality days)
      swim:      CSS goal-pace 50s, 100-yd intervals, 50/50 workout, time-trial Saturday      */
   const secs = s => Math.floor(s / 60) + ':' + pad(Math.round(s % 60));
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const weekStartKey = key => shiftKey(key, -((keyToDate(key).getDay() + 6) % 7)); // Monday
+
+  /* ---- adaptive weekly progression: this week's goals grow from last week's log ---- */
+  function prevWeekStats(act, key, dows) {
+    const ws0 = weekStartKey(key);
+    let total = 0, days = 0;
+    for (let i = 1; i <= 7; i++) {
+      const k = shiftKey(ws0, -i);
+      if (dows && !dows.includes(keyToDate(k).getDay())) continue;
+      const v = dayValue(act, k);
+      if (v > 0) { total += v; days++; }
+    }
+    return { total, days };
+  }
+  function adaptVolume(act, p, key, roundTo, floor) {
+    const { total, days } = prevWeekStats(act, key, [1, 2, 3, 4, 5]);
+    if (days < 2) return Math.min(p.daily, p.cap || Infinity);
+    const next = Math.round((total / days) * 1.05 / roundTo) * roundTo;   // +5% on what you actually did
+    return clamp(next, floor, p.cap || Infinity);
+  }
+  function weekFactor(act, key, baseWeekTotal) {
+    const { total } = prevWeekStats(act, key, null);
+    if (!(total > 0)) return 1;
+    return clamp((total * 1.10) / baseWeekTotal, 0.6, 1.6);               // 10% rule, bounded
+  }
+
   const PLANS = {
     armstrong(p, dow) {
       const ws = p.ws || 5;
+      const cap = g => Math.min(g, 50);                                    // NSW guide: <=50 pull-ups/day
       return [
         { goal: null, label: 'Rest day', detail: 'Armstrong runs Mon–Fri. Recover today.' },
-        { goal: 6 * ws, label: 'Armstrong — 5 max sets', detail: '5 max-effort sets, 90 sec rest between. Morning: 3 max sets of pushups.' },
-        { goal: 7 * ws, label: 'Armstrong — pyramid', detail: 'Ladder 1, 2, 3… reps (10 sec per rep rest) until you miss, then one max set.' },
-        { goal: 9 * ws, label: 'Armstrong — 3 grips', detail: `3 training sets of ${ws} in each grip: wide, close, underhand. 60 sec rest.` },
-        { goal: 10 * ws, label: 'Armstrong — max training sets', detail: `Training sets of ${ws}, 60 sec rest, until you can't complete one.` },
-        { goal: 9 * ws, label: 'Armstrong — repeat hardest', detail: 'Repeat whichever workout was hardest this week.' },
-        { goal: null, label: 'Rest day', detail: 'Recover — new cycle Monday. Raise your working set by 1 when a week feels manageable.' }
+        { goal: cap(6 * ws), label: 'Armstrong — 5 max sets', detail: '5 max-effort sets, 90 sec rest between. Morning: 3 max sets of pushups.' },
+        { goal: cap(7 * ws), label: 'Armstrong — pyramid', detail: 'Ladder 1, 2, 3… reps (10 sec per rep rest) until you miss, then one max set.' },
+        { goal: cap(9 * ws), label: 'Armstrong — 3 grips', detail: `3 training sets of ${ws} in each grip: wide, close, underhand. 60 sec rest.` },
+        { goal: cap(10 * ws), label: 'Armstrong — max training sets', detail: `Training sets of ${ws}, 60 sec rest, until you can't complete one.` },
+        { goal: cap(9 * ws), label: 'Armstrong — repeat hardest', detail: 'Repeat whichever workout was hardest this week. Working set rises automatically after a solid week.' },
+        { goal: null, label: 'Rest day', detail: 'Recover — new cycle Monday.' }
       ][dow];
     },
-    volume(p, dow) {
+    volume(p, dow, act, key) {
       if (dow === 0) return { goal: null, label: 'Rest day', detail: 'Full recovery before the new week.' };
       if (dow === 6) return { goal: p.test, label: '2-minute max test', detail: 'One all-out 2-minute set. Log the result and watch it climb toward ' + p.test + '.' };
-      return { goal: p.daily, label: 'Volume day', detail: 'Grease the groove: sets of 40–60% of your max, spread across the day, 15–60 min apart.' };
+      const daily = adaptVolume(act, p, key, 5, 50);
+      return { goal: daily, label: 'Volume day — ' + daily + ' reps', detail: 'Grease the groove: sub-max sets spread across the day. Auto-adjusts +5% off last week (NSW cap ' + (p.cap || 200) + '/day).' };
     },
-    plank(p, dow) {
+    plank(p, dow, act, key) {
       if (dow === 0) return { goal: null, label: 'Rest day', detail: 'Core recovers fast, but take one day off.' };
       if (dow === 6) return { goal: p.test, label: 'Max hold test', detail: 'One max-effort hold with perfect form. Target ' + secs(p.test) + '.' };
-      return { goal: p.daily, label: 'Accumulate ' + secs(p.daily), detail: '3–5 holds with 30–60 sec rest. Stop each hold before form breaks; add 5–10 sec per week.' };
+      const daily = adaptVolume(act, p, key, 10, 120);
+      return { goal: daily, label: 'Accumulate ' + secs(daily), detail: '3–5 holds, 30–60 sec rest. Grows ~5% weekly off your actual log; stop each hold before form breaks.' };
     },
-    run(p, dow) {
+    run(p, dow, act, key) {
+      const f = weekFactor(act, key, 12);                                  // base week = 12 mi
+      const mi = g => Math.max(1, Math.round(g * f * 4) / 4);
       return [
         { goal: null, label: 'Rest day', detail: 'Full rest or an easy walk.' },
-        { goal: 2, label: 'Zone 2 easy', detail: 'Conversational pace (60–70% max HR). Base mileage is what makes the fast days work.' },
-        { goal: 3, label: '400m intervals', detail: '6–8 × 400 m faster than goal pace (~2:00/400 for 8:10), jog 400 m between. Total with warmup ≈ 3 mi.' },
+        { goal: mi(2), label: 'Zone 2 easy', detail: 'Conversational pace (60–70% max HR). Base mileage is what makes the fast days work.' },
+        { goal: mi(3), label: 'VO2max intervals', detail: 'Alternate weeks: 6–8 × 400 m fast (~2:00/400), jog 400 between — or Norwegian 4×4: 4 × 4 min at 90–95% max HR, 3 min jog recovery.' },
         { goal: null, label: 'Rest / cross-train', detail: 'Off legs — swim or mobility today.' },
-        { goal: 2, label: 'Tempo', detail: '20 min comfortably hard (just slower than goal pace) plus easy warmup and cooldown.' },
-        { goal: 2, label: 'Zone 2 easy', detail: 'Conversational pace. Keep it genuinely easy.' },
-        { goal: 3, label: 'Long easy run', detail: 'Long slow distance in zone 2. Every other week: swap in a 1.5 mi time trial.' }
+        { goal: mi(2), label: 'Tempo', detail: '20 min comfortably hard (just slower than goal pace) plus easy warmup and cooldown.' },
+        { goal: mi(2), label: 'Zone 2 easy', detail: 'Conversational pace. Keep it genuinely easy — weekly mileage auto-adjusts off last week (+10% max).' },
+        { goal: mi(3), label: 'Long easy run', detail: 'Long slow distance in zone 2. Sandbag runs: keep them short and easy — load builds durability, not speed.' }
       ][dow];
     },
-    swim(p, dow) {
+    swim(p, dow, act, key) {
+      const f = weekFactor(act, key, 4000);                                // base week = 4000 yd
+      const yd = g => Math.max(400, Math.round(g * f / 50) * 50);
       return [
         { goal: null, label: 'Rest day', detail: 'Recover.' },
-        { goal: 1000, label: 'CSS goal-pace 50s', detail: '10 × 50 yd at goal pace (~49 sec/50 for 8:10) with 10 sec rest. Pull–breathe–kick–glide.' },
+        { goal: yd(1000), label: 'CSS goal-pace 50s', detail: '10 × 50 yd at goal pace (~49 sec/50 for 8:10) with 10 sec rest. Pull–breathe–kick–glide.' },
         { goal: null, label: 'Rest / run day', detail: 'Out of the pool today.' },
-        { goal: 1000, label: '100-yd intervals', detail: '5–8 × 100 yd a touch faster than base pace, generous rest, plus warmup/cooldown.' },
+        { goal: yd(1000), label: '100-yd intervals', detail: '5–8 × 100 yd a touch faster than base pace, generous rest, plus warmup/cooldown.' },
         { goal: null, label: 'Rest / run day', detail: 'Out of the pool today.' },
-        { goal: 1000, label: '50/50 workout', detail: '10 × (50 free fast + 50 CSS at goal pace, no rest between). 10 sec between rounds.' },
-        { goal: 1000, label: 'Time trial + technique', detail: 'Every other week: 500 yd all-out. Otherwise easy technique yardage.' }
+        { goal: yd(1000), label: '50/50 workout', detail: '10 × (50 free fast + 50 CSS at goal pace, no rest between). Yardage auto-adjusts off last week.' },
+        { goal: yd(1000), label: 'Time trial + technique', detail: 'Every other week: 500 yd all-out (log it in Standards too). Otherwise easy technique yardage.' }
       ][dow];
     }
   };
 
   function planInfo(act, key) {
     if (!act.plan || !PLANS[act.plan.id]) return null;
-    return PLANS[act.plan.id](act.plan, keyToDate(key).getDay());
+    return PLANS[act.plan.id](act.plan, keyToDate(key).getDay(), act, key);
+  }
+
+  /* Armstrong auto-progression: +1 working-set rep after a week completed at >=85% */
+  function armstrongAutoProgress() {
+    const cw = weekStartKey(todayKey());
+    let changed = false;
+    state.activities.forEach(a => {
+      if (!a.plan || a.plan.id !== 'armstrong' || a.plan.bumpWeek === cw) return;
+      const ws = a.plan.ws || 5;
+      let prescribed = 0, logged = 0, any = false;
+      for (let i = 1; i <= 7; i++) {
+        const k = shiftKey(cw, -i);
+        const dow = keyToDate(k).getDay();
+        if (dow >= 1 && dow <= 5) {
+          prescribed += Math.min([0, 6, 7, 9, 10, 9][dow] * ws, 50);
+          const v = dayValue(a, k);
+          if (v > 0) { logged += v; any = true; }
+        }
+      }
+      if (any && prescribed > 0 && logged >= prescribed * 0.85 && ws < 10) {
+        a.plan.ws = ws + 1;
+        setTimeout(() => toast('Armstrong working set is now ' + (ws + 1) + ' — last week was solid'), 400);
+      }
+      a.plan.bumpWeek = cw;
+      changed = true;
+    });
+    if (changed) save();
   }
   function goalForDay(act, key) {
     if (act.goal != null) return act.goal;           // manual goal overrides the plan
@@ -629,7 +652,8 @@
     waves: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2.5 9.5c2.1-2.6 4.2-2.6 6.3 0s4.2 2.6 6.3 0 4.2-2.6 6.4 0"/><path d="M2.5 15.5c2.1-2.6 4.2-2.6 6.3 0s4.2 2.6 6.3 0 4.2-2.6 6.4 0"/></svg>',
     timer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v4l2.5 2M9.5 2.5h5"/></svg>',
     heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20.5S4.5 16 3 11.5C1.9 8.4 4 5.5 7 5.5c2 0 3.6 1.2 5 3 1.4-1.8 3-3 5-3 3 0 5.1 2.9 4 6-1.5 4.5-9 9-9 9z"/></svg>',
-    sliders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8h10M18 8h2M4 16h2M10 16h10"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/></svg>'
+    sliders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8h10M18 8h2M4 16h2M10 16h10"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/></svg>',
+    medal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="14.5" r="5.5"/><path d="M12 12.2l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2L9.1 14.3l2-.3z" fill="currentColor" stroke="none"/><path d="M8.5 9.5L5.5 3.5M15.5 9.5l3-6M9.8 3.5h4.4"/></svg>'
   };
   function iconFor(a) {
     if (a.kind === 'distance') return 'waves';
@@ -642,7 +666,7 @@
 
   function resolveTab() {
     const t = state.ui.tab;
-    if (t === 'manage' || t === 'health') return t;
+    if (t === 'manage' || t === 'health' || t === 'standards') return t;
     const a = actById(t);
     if (a) return a.group === 'health' ? 'health' : t;
     if (GROUPS.includes(t)) {
@@ -658,6 +682,7 @@
     bar.innerHTML = workoutActs().map(a =>
       `<button data-tab="${a.id}" class="${tab === a.id ? 'sel' : ''}" aria-label="${esc(a.name)}">${ICONS[iconFor(a)]}<span class="tlabel">${esc(a.name)}</span></button>`).join('')
       + `<button data-tab="health" class="${tab === 'health' ? 'sel' : ''}" aria-label="Health">${ICONS.heart}<span class="tlabel">Health</span></button>`
+      + `<button data-tab="standards" class="${tab === 'standards' ? 'sel' : ''}" aria-label="Standards">${ICONS.medal}<span class="tlabel">Standards</span></button>`
       + `<button data-tab="manage" class="${tab === 'manage' ? 'sel' : ''}" aria-label="Manage">${ICONS.sliders}<span class="tlabel">Manage</span></button>`;
     const sel = bar.querySelector('button.sel');
     if (sel) bar.scrollLeft = Math.max(0, sel.offsetLeft - (bar.clientWidth - sel.offsetWidth) / 2);
@@ -669,6 +694,7 @@
     $('#topDate').textContent = dateLong();
     if (tab === 'manage') renderManage();
     else if (tab === 'health') renderHealth();
+    else if (tab === 'standards') renderStandards();
     else renderActivity(actById(tab));
     window.scrollTo(0, 0);
   }
@@ -682,6 +708,20 @@
     return '≈ ' + sets + (sets === 1 ? ' set' : ' sets') + ' of ' + fmt(last) + ' to finish';
   }
 
+  /* weighted-work flags: 20 lb vest for calisthenics/abs, ~35 lb sandbag for runs */
+  const loadToggle = {};
+  function loadOpt(act) {
+    if (act.kind === 'measure' || act.group === 'health') return null;
+    if (act.kind === 'distance') return /run/i.test(act.name) ? { lbs: 35, label: '+35 lb sandbag' } : null;
+    return { lbs: 20, label: '+20 lb vest' };
+  }
+  function loadBtn(act) {
+    const lo = loadOpt(act);
+    if (!lo) return '';
+    return `<button class="loadbtn ${loadToggle[act.id] ? 'on' : ''}" data-action="toggle-load" data-act="${act.id}"
+      aria-pressed="${!!loadToggle[act.id]}">${loadToggle[act.id] ? '✓ ' : ''}${lo.label}</button>`;
+  }
+
   function quickRow(act, isMeasure) {
     const btns = (act.quick || []).map(q =>
       `<button class="qbtn" data-action="log" data-act="${act.id}" data-amt="${q}">+${fmt(q)}</button>`).join('');
@@ -691,13 +731,15 @@
           <input data-f="dist" type="number" inputmode="decimal" step="any" min="0" placeholder="${esc(act.unit)}" aria-label="Distance in ${esc(act.unit)} for ${esc(act.name)}">
           <input data-f="mins" type="number" inputmode="decimal" step="any" min="0" placeholder="min" aria-label="Time in minutes for ${esc(act.name)} (optional)">
           <button type="submit">Log</button>
-        </form></div>`;
+        </form></div>
+        ${loadBtn(act) ? `<div class="loadrow">${loadBtn(act)}</div>` : ''}`;
     }
     return `<div class="quickrow">${btns}
       <form class="qform" data-action="logform" data-act="${act.id}">
         <input type="number" inputmode="decimal" step="any" min="0" placeholder="${esc(act.unit)}" aria-label="Amount in ${esc(act.unit)} for ${esc(act.name)}">
         <button type="submit">${isMeasure ? 'Record' : 'Log'}</button>
-      </form></div>`;
+      </form></div>
+      ${loadBtn(act) ? `<div class="loadrow">${loadBtn(act)}</div>` : ''}`;
   }
 
   function setChips(act) {
@@ -705,7 +747,7 @@
     if (!todays.length) return '';
     return `<div class="setrow">` + todays.map(e => {
       const pace = act.kind === 'distance' && e.mins > 0 ? paceStr(act, e.amount, e.mins) : null;
-      return `<span class="setchip"><b>${fmt(e.amount)}</b>${pace ? ' ' + pace : ''} ${timeShort(e.ts)}
+      return `<span class="setchip"><b>${fmt(e.amount)}</b>${pace ? ' ' + pace : ''}${e.load ? ` <span class="loadtag">+${e.load}lb</span>` : ''} ${timeShort(e.ts)}
         <button data-action="del-entry" data-id="${e.id}" aria-label="Delete this set">✕</button></span>`;
     }).join('') + `</div>`;
   }
@@ -730,7 +772,7 @@
           ${deltaTxt ? `<span class="delta">${deltaTxt}</span>` : ''}
           ${v == null ? `<span class="delta">not recorded today</span>` : `<span class="donetag">✓ recorded today</span>`}
         </div>
-        ${quickRow(act, true)}
+        <div class="logpanel"><div class="lp-label">Record</div>${quickRow(act, true)}</div>
       </section>`;
     }
 
@@ -762,8 +804,11 @@
         </div>
         ${!done ? `<div class="hint">${remainHint(act, remain)}</div>` : ''}`
       : ''}
-      ${setChips(act)}
-      ${quickRow(act, false)}
+      <div class="logpanel">
+        <div class="lp-label">Log ${act.kind === 'distance' ? 'workout' : 'set'}</div>
+        ${setChips(act)}
+        ${quickRow(act, false)}
+      </div>
     </section>`;
   }
 
@@ -790,6 +835,118 @@
       ${goalCard(act)}
       <div class="eyebrow">Progress</div>
       ${progressBlock([act])}
+    `;
+  }
+
+  /* ---------- STANDARDS: twice-monthly test days (1st & 3rd Saturday) ---------- */
+  const STANDARDS = [
+    { key: 'pushups', name: 'Pushups — 2 min', target: 100, unit: 'reps', dir: 'up' },
+    { key: 'situps',  name: 'Sit-ups — 2 min', target: 100, unit: 'reps', dir: 'up' },
+    { key: 'pullups', name: 'Pull-ups — max set', target: 20, unit: 'reps', dir: 'up' },
+    { key: 'plank',   name: 'Plank — max hold', target: 270, unit: 'time', dir: 'up', time: true },
+    { key: 'run',     name: '1.5 mi run', target: 490, unit: 'time', dir: 'down', time: true },
+    { key: 'swim',    name: '500 yd swim', target: 490, unit: 'time', dir: 'down', time: true }
+  ];
+  const stdFmt = (s, v) => v == null ? '–' : (s.time ? secs(v) : fmt(v));
+  const isTestDay = key => {
+    const d = keyToDate(key);
+    if (d.getDay() !== 6) return false;
+    const nth = Math.floor((d.getDate() - 1) / 7);
+    return nth === 0 || nth === 2;                     // 1st & 3rd Saturday
+  };
+  function nextTestKey() {
+    let k = todayKey();
+    for (let i = 0; i < 40; i++) { if (isTestDay(k)) return k; k = shiftKey(k, 1); }
+    return null;
+  }
+  function parseTestValue(std, raw) {
+    raw = String(raw).trim();
+    if (!raw) return null;
+    if (raw.includes(':')) {
+      const [m, s2] = raw.split(':');
+      const v = parseInt(m, 10) * 60 + parseFloat(s2 || 0);
+      return v > 0 ? v : null;
+    }
+    const v = parseFloat(raw);
+    return v > 0 ? v : null;
+  }
+  function stdBest(std) {
+    const vs = state.tests.filter(t => t.key === std.key).map(t => t.value);
+    if (!vs.length) return null;
+    return std.dir === 'up' ? Math.max(...vs) : Math.min(...vs);
+  }
+  function stdLatest(std) {
+    const ts = state.tests.filter(t => t.key === std.key).sort((a, b) => b.ts - a.ts);
+    return ts.length ? ts[0].value : null;
+  }
+
+  function renderStandards() {
+    const next = nextTestKey();
+    const today = isTestDay(todayKey());
+    const nextDate = next ? keyToDate(next).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) : '';
+    const banner = today
+      ? `<div class="banner testday"><span class="bicon">⏱</span><div><strong>Test day.</strong><div class="sub">Warm up, then hit each standard fresh and log the results below. Unweighted — this is the measuring stick.</div></div></div>`
+      : `<div class="banner"><span class="bicon">📅</span><div><strong>Next test day: ${esc(nextDate)}</strong><div class="sub">Every 1st &amp; 3rd Saturday. Treat it like the real PST: rested, in order, full effort.</div></div></div>`;
+
+    const cards = STANDARDS.map(s => {
+      const best = stdBest(s), latest = stdLatest(s);
+      const pct = best == null ? 0 : Math.min(100, Math.round(s.dir === 'up' ? (best / s.target) * 100 : (s.target / best) * 100));
+      const met = best != null && (s.dir === 'up' ? best >= s.target : best <= s.target);
+      let gap = '';
+      if (best != null && !met) {
+        gap = s.dir === 'up'
+          ? (s.time ? secs(s.target - best) + ' to add' : fmt(s.target - best) + ' ' + s.unit + ' to go')
+          : secs(best - s.target) + ' to shave';
+      }
+      return `<section class="card">
+        <div class="gc-head"><span class="gc-name">${esc(s.name)}</span>
+          <span class="gc-frac">goal <b>${stdFmt(s, s.target)}</b></span></div>
+        <div class="std-vals">
+          <span class="stdv"><b>${stdFmt(s, best)}</b> best</span>
+          <span class="stdv">${stdFmt(s, latest)} latest</span>
+          ${met ? `<span class="donetag">✓ standard met</span>` : gap ? `<span class="stdgap">${gap}</span>` : ''}
+        </div>
+        <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-label="${esc(s.name)} progress toward standard">
+          <span class="${met ? 'full' : ''}" style="width:${pct}%"></span>
+        </div>
+        <form class="qform stdform" data-action="testform" data-key="${s.key}">
+          <input type="text" inputmode="${s.time ? 'numeric' : 'decimal'}" placeholder="${s.time ? 'mm:ss' : s.unit}" aria-label="Result for ${esc(s.name)}">
+          <button type="submit">Record test</button>
+        </form>
+      </section>`;
+    }).join('');
+
+    const sel = STANDARDS.find(s => s.key === state.ui.stdSel) || STANDARDS[0];
+    const chips = `<div class="chips">` + STANDARDS.map(s =>
+      `<button class="chip ${s.key === sel.key ? 'sel' : ''}" data-action="pick-std" data-key="${s.key}">${esc(s.name.split(' — ')[0])}</button>`).join('') + `</div>`;
+    const byDay = {};
+    state.tests.filter(t => t.key === sel.key).forEach(t => { const k = dayKey(t.ts); if (!byDay[k] || t.ts > byDay[k].ts) byDay[k] = t; });
+    const chart = lineChart(lastNDays(180), k => byDay[k] ? byDay[k].value : null, {
+      name: sel.name, unit: sel.time ? 'min:sec' : sel.unit, goal: sel.target, goalLabel: 'standard',
+      fmtV: sel.time ? secs : fmt,
+      emptyMsg: 'Record this test on two test days and the trend shows up here.'
+    });
+
+    const recent = state.tests.slice().sort((a, b) => b.ts - a.ts).slice(0, 20);
+    const rows = recent.map(t => {
+      const s = STANDARDS.find(x => x.key === t.key);
+      const d = new Date(t.ts);
+      return `<tr><td class="amt">${s ? esc(s.name) : esc(t.key)}</td><td class="amt">${stdFmt(s || {}, t.value)}</td>
+        <td class="when">${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</td>
+        <td class="del"><button data-action="del-test" data-id="${t.id}" aria-label="Delete test result">✕</button></td></tr>`;
+    }).join('');
+
+    view.innerHTML = `
+      ${banner}
+      <div class="eyebrow">The six standards</div>
+      ${cards}
+      <div class="eyebrow">Test history</div>
+      ${chips}
+      <section class="card"><div class="chartwrap">${chart}</div></section>
+      <section class="card">
+        <div class="chart-title"><span class="ct">All recorded tests</span></div>
+        ${recent.length ? `<table class="log"><tbody>${rows}</tbody></table>` : `<div class="empty">No tests yet — first one: ${esc(nextDate)}.</div>`}
+      </section>
     `;
   }
 
@@ -1006,7 +1163,8 @@
       const d = new Date(e.ts);
       const when = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' · ' + timeShort(e.ts);
       const pace = sel.kind === 'distance' && e.mins > 0 ? ' · ' + mmss(e.mins) + ' min · ' + paceStr(sel, e.amount, e.mins) : '';
-      return `<tr><td class="amt">${fmt(e.amount)} ${esc(sel.unit)}${pace}</td><td class="when">${when}</td>
+      const load = e.load ? ` · <span class="loadtag">+${e.load} lb</span>` : '';
+      return `<tr><td class="amt">${fmt(e.amount)} ${esc(sel.unit)}${pace}${load}</td><td class="when">${when}</td>
         <td class="del"><button data-action="del-entry" data-id="${e.id}" aria-label="Delete entry">✕</button></td></tr>`;
     }).join('');
 
@@ -1092,6 +1250,10 @@
     if (!act || !(amount > 0)) return;
     const entry = { id: uid(), actId, amount, ts: Date.now() };
     if (mins > 0) entry.mins = mins;
+    if (loadToggle[actId]) {
+      const lo = loadOpt(act);
+      if (lo) entry.load = lo.lbs;
+    }
     state.entries.push(entry);
     save();
     if (act.kind === 'measure') {
@@ -1123,7 +1285,7 @@
   async function exportBackup() {
     const stamp = todayKey().replace(/-/g, '');
     const filename = 'training-log-backup-' + stamp + '.json';
-    const data = JSON.stringify({ v: state.v, exported: new Date().toISOString(), activities: state.activities, entries: state.entries }, null, 2);
+    const data = JSON.stringify({ v: state.v, exported: new Date().toISOString(), activities: state.activities, entries: state.entries, tests: state.tests }, null, 2);
     if (window.claude && window.claude.downloads) {
       try { await window.claude.downloads.save({ filename, data }); toast('Backup saved'); return; }
       catch (err) {
@@ -1146,6 +1308,7 @@
         if (!Array.isArray(d.activities) || !Array.isArray(d.entries)) throw new Error('bad shape');
         state.activities = d.activities;
         state.entries = d.entries;
+        state.tests = Array.isArray(d.tests) ? d.tests : [];
         state.v = d.v || 1;
         state.ui = { tab: 'calisthenics', progressAct: null };
         state = migrate(state);
@@ -1182,6 +1345,12 @@
     }
     else if (act === 'pick-act') { state.ui.progressAct = el.dataset.act; save(); render(); }
     else if (act === 'set-range') { state.ui.range = el.dataset.range; save(); render(); }
+    else if (act === 'toggle-load') { loadToggle[el.dataset.act] = !loadToggle[el.dataset.act]; render(); }
+    else if (act === 'pick-std') { state.ui.stdSel = el.dataset.key; save(); render(); }
+    else if (act === 'del-test') {
+      state.tests = state.tests.filter(t => t.id !== el.dataset.id);
+      save(); toast('Test result deleted'); render();
+    }
     else if (act === 'save-act') {
       const row = el.closest('[data-actrow]');
       const a = actById(el.dataset.act);
@@ -1228,6 +1397,20 @@
   });
 
   document.addEventListener('submit', ev => {
+    const tf = ev.target.closest('form[data-action="testform"]');
+    if (tf) {
+      ev.preventDefault();
+      const std = STANDARDS.find(s => s.key === tf.dataset.key);
+      const inp = tf.querySelector('input');
+      const v = parseTestValue(std, inp.value);
+      if (v == null) { inp.value = ''; inp.focus(); return; }
+      state.tests.push({ id: uid(), ts: Date.now(), key: std.key, value: v });
+      save();
+      const met = std.dir === 'up' ? v >= std.target : v <= std.target;
+      toast(met ? '🏁 Standard met: ' + std.name + '!' : 'Recorded ' + stdFmt(std, v) + ' — goal ' + stdFmt(std, std.target));
+      render();
+      return;
+    }
     const f = ev.target.closest('form[data-action="logform"]');
     if (!f) return;
     ev.preventDefault();
@@ -1283,6 +1466,7 @@
   });
   setInterval(() => { if (todayKey() !== lastDay) { lastDay = todayKey(); render(); } }, 60000);
 
+  armstrongAutoProgress();
   render();
 })();
 </script>
