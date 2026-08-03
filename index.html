@@ -1,4 +1,4 @@
-<title>Daily Training Log</title>
+<title>Training Log</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <style>
   :root {
@@ -11,18 +11,18 @@
     --muted: #7F868F;
     --hairline: #262A30;
     --grid: #23262B;
-    --accent: #3987E5;
-    --accent-deep: #5C9EEA;
-    --accent-soft: rgba(57,135,229,.15);
-    --accent-ink: #8FBCF0;
-    --red: #E05252;
-    --red-ink: #F08A8A;
-    --red-soft: rgba(224,82,82,.14);
+    --accent: #E23B52;
+    --accent-deep: #EA6478;
+    --accent-soft: rgba(226,59,82,.15);
+    --accent-ink: #F09AA6;
+    --accent2: #3987E5;
+    --accent2-ink: #8FBCF0;
+    --accent2-soft: rgba(57,135,229,.15);
     --good: #0ca30c;
     --good-text: #4CC670;
     --good-soft: rgba(12,163,12,.15);
-    --danger: #E05252;
-    --danger-soft: rgba(224,82,82,.14);
+    --danger: #3987E5;
+    --danger-soft: rgba(57,135,229,.15);
     --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.35);
     color-scheme: dark;
   }
@@ -39,7 +39,7 @@
     font-family: "Avenir Next Condensed", "Helvetica Neue Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
   }
 
-  #shell { max-width: 680px; margin: 0 auto; padding: 0 14px 96px; }
+  #shell { max-width: 680px; margin: 0 auto; padding: 0 14px 140px; }
 
   header.top {
     display: flex; align-items: baseline; justify-content: space-between;
@@ -49,7 +49,7 @@
     font-family: "Avenir Next Condensed", "Helvetica Neue Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
     font-weight: 700; font-size: 20px; letter-spacing: .09em; text-transform: uppercase;
   }
-  .brand .tick { color: var(--red); }
+  .brand .tick { color: var(--accent2); }
   #topDate { color: var(--ink-2); font-size: 13.5px; font-weight: 600; white-space: nowrap; }
 
   .eyebrow {
@@ -71,7 +71,7 @@
     border-radius: 14px; padding: 12px 14px; margin-bottom: 12px;
     color: var(--ink);
   }
-  .banner.alldone { background: var(--good-soft); }
+  .banner.alldone { background: var(--accent2-soft); }
   .banner .bicon { flex: 0 0 auto; margin-top: 2px; }
   .banner strong { font-weight: 700; }
   .banner .sub { color: var(--ink-2); font-size: 14px; }
@@ -89,7 +89,7 @@
     font-size: 40px; font-weight: 800; line-height: 1.05; letter-spacing: -0.01em;
     font-variant-numeric: tabular-nums;
   }
-  .gc-remain .big.done { color: var(--good-text); }
+  .gc-remain .big.done { color: var(--accent2-ink); }
   .gc-remain .lbl { color: var(--ink-2); font-size: 14px; }
   .hint { color: var(--muted); font-size: 13px; margin-top: 2px; }
   .planline {
@@ -100,7 +100,7 @@
 
   .bar { height: 12px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin: 10px 0 4px; }
   .bar > span { display: block; height: 100%; border-radius: 999px; background: var(--accent); transition: width .35s ease; }
-  .bar > span.full { background: var(--good); }
+  .bar > span.full { background: var(--accent2); }
   @media (prefers-reduced-motion: reduce) { .bar > span { transition: none; } }
 
   .setrow { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
@@ -131,18 +131,18 @@
     border: 1px dashed var(--hairline); background: transparent; color: var(--ink-2);
     font-weight: 600; font-size: 13px; padding: 7px 12px; border-radius: 999px; cursor: pointer;
   }
-  .loadbtn.on { background: var(--red-soft); border: 1px solid var(--red); color: var(--red-ink); }
-  .loadtag { color: var(--red-ink); font-weight: 700; }
+  .loadbtn.on { background: var(--accent2-soft); border: 1px solid var(--accent2); color: var(--accent2-ink); }
+  .loadtag { color: var(--accent2-ink); font-weight: 700; }
   .std-vals { display: flex; flex-wrap: wrap; gap: 14px; align-items: baseline; margin: 8px 0 2px; }
   .stdv { color: var(--ink-2); font-size: 14px; font-variant-numeric: tabular-nums; }
   .stdv b { color: var(--ink); font-size: 22px; font-weight: 800; }
-  .stdgap { color: var(--red-ink); font-size: 13.5px; font-weight: 600; }
-  .banner.testday { background: var(--red-soft); }
+  .stdgap { color: var(--accent2-ink); font-size: 13.5px; font-weight: 600; }
+  .banner.testday { background: var(--accent2-soft); }
   .stdform { margin-top: 10px; }
   .qbtn {
     border: 1px solid var(--hairline); background: var(--surface-3); color: var(--ink);
-    font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums;
-    padding: 9px 14px; border-radius: 10px; cursor: pointer; min-width: 58px;
+    font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums;
+    padding: 13px 18px; border-radius: 12px; cursor: pointer; min-width: 66px;
   }
   .qbtn:active { transform: scale(.97); }
   .qform { display: flex; gap: 8px; flex: 1 1 150px; min-width: 150px; }
@@ -152,8 +152,8 @@
     font-variant-numeric: tabular-nums;
   }
   .qform button {
-    border: 0; background: var(--accent); color: #fff; font-weight: 700; font-size: 15px;
-    padding: 9px 16px; border-radius: 10px; cursor: pointer;
+    border: 0; background: var(--accent); color: #fff; font-weight: 800; font-size: 16px;
+    padding: 12px 18px; border-radius: 12px; cursor: pointer;
   }
   .qform button:active { transform: scale(.97); }
   input:focus-visible, button:focus-visible, select:focus-visible {
@@ -162,7 +162,7 @@
 
   .donetag {
     display: inline-flex; align-items: center; gap: 6px;
-    color: var(--good-text); font-weight: 700; font-size: 14px;
+    color: var(--accent2-ink); font-weight: 700; font-size: 14px;
   }
 
   /* ---- measure (body weight) ---- */
@@ -254,7 +254,7 @@
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
     background: var(--surface); border-top: 1px solid var(--hairline);
     display: flex; justify-content: center;
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 6px);
   }
   nav.tabs .inner {
     display: flex; width: 100%; max-width: 680px;
@@ -262,24 +262,24 @@
   }
   nav.tabs .inner::-webkit-scrollbar { display: none; }
   nav.tabs button {
-    flex: 1 0 auto; min-width: 64px; border: 0; background: transparent; color: var(--muted);
-    padding: 9px 10px 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px;
+    flex: 1 0 auto; min-width: 88px; border: 0; background: transparent; color: var(--muted);
+    padding: 14px 14px 13px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px;
   }
   nav.tabs button.sel { color: var(--accent-ink); }
   nav.tabs button .tlabel {
-    font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap;
+    font-size: 13px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap;
   }
-  nav.tabs button svg { width: 21px; height: 21px; }
+  nav.tabs button svg { width: 30px; height: 30px; }
 
   #toast {
     position: fixed; left: 50%; transform: translateX(-50%);
-    bottom: calc(64px + env(safe-area-inset-bottom, 0px)); z-index: 60;
+    bottom: calc(104px + env(safe-area-inset-bottom, 0px)); z-index: 60;
     background: var(--ink); color: var(--bg); font-size: 14px; font-weight: 600;
     padding: 10px 14px; border-radius: 12px; display: none; align-items: center; gap: 12px;
     box-shadow: 0 4px 18px rgba(0,0,0,.3); max-width: 92vw;
   }
   #toast button {
-    border: 0; background: transparent; color: #1c5cab; font-weight: 800;
+    border: 0; background: transparent; color: #B3273C; font-weight: 800;
     font-size: 14px; cursor: pointer; padding: 2px 4px; letter-spacing: .04em;
   }
 
@@ -292,7 +292,7 @@
 
 <div id="shell">
   <header class="top">
-    <div class="brand">Daily<span class="tick">/</span>Training<span class="tick">/</span>Log</div>
+    <div class="brand">Training<span class="tick">/</span>Log</div>
     <div id="topDate"></div>
   </header>
   <main id="view"></main>
@@ -331,10 +331,10 @@
   const GROUP_LABEL = { calisthenics: 'Calisthenics', abs: 'Abs', cardio: 'Swim & Run', health: 'Health' };
 
   const DEFAULT_PLANS = {
-    pushups:  { id: 'volume', daily: 200, test: 100, cap: 200 },   // NSW guide: <=200/day
+    pushups:  { id: 'volume', daily: 200, test: 100 },
     pullups:  { id: 'armstrong', ws: 5 },
-    situps:   { id: 'volume', daily: 150, test: 100, cap: 200 },
-    plank:    { id: 'plank', daily: 240, test: 270, cap: 600 },
+    situps:   { id: 'volume', daily: 150, test: 100 },
+    plank:    { id: 'plank', daily: 240, test: 270 },
     run:      { id: 'run' },
     swim:     { id: 'swim' }
   };
@@ -342,7 +342,7 @@
   function defaultState() {
     const mk = (name, kind, unit, goal, quick, group, plan) => ({ id: uid(), name, kind, unit, goal, quick, group, plan: plan ? { ...plan } : undefined, created: Date.now() });
     return {
-      v: 8,
+      v: 9,
       activities: [
         mk('Pushups',       'count',    'reps', null, [10, 20, 30],     'calisthenics', DEFAULT_PLANS.pushups),
         mk('Pull-ups',      'count',    'reps', null, [5, 10],          'calisthenics', DEFAULT_PLANS.pullups),
@@ -428,6 +428,10 @@
       const water = s.activities.find(a => /water/i.test(a.name));
       if (water) water.quick = [17, 20];
       s.v = 8;
+    }
+    if (s.v < 9) {
+      s.activities.forEach(a => { if (a.plan) delete a.plan.cap; });
+      s.v = 9;
     }
     s.tests = s.tests || [];
     s.activities.forEach(a => { if (!a.group || !GROUPS.includes(a.group)) a.group = guessGroup(a); });
@@ -522,20 +526,20 @@
   }
   function adaptVolume(act, p, key, roundTo, floor) {
     const { total, days } = prevWeekStats(act, key, [1, 2, 3, 4, 5]);
-    if (days < 2) return Math.min(p.daily, p.cap || Infinity);
+    if (days < 2) return p.daily;
     const next = Math.round((total / days) * 1.05 / roundTo) * roundTo;   // +5% on what you actually did
-    return clamp(next, floor, p.cap || Infinity);
+    return Math.max(floor, next);                                          // no ceiling — room to grow
   }
   function weekFactor(act, key, baseWeekTotal) {
     const { total } = prevWeekStats(act, key, null);
     if (!(total > 0)) return 1;
-    return clamp((total * 1.10) / baseWeekTotal, 0.6, 1.6);               // 10% rule, bounded
+    return Math.max(0.6, (total * 1.10) / baseWeekTotal);                  // 10% weekly growth, uncapped
   }
 
   const PLANS = {
     armstrong(p, dow) {
       const ws = p.ws || 5;
-      const cap = g => Math.min(g, 50);                                    // NSW guide: <=50 pull-ups/day
+      const cap = g => g;                                                  // no cap — room to grow
       return [
         { goal: null, label: 'Rest day', detail: 'Armstrong runs Mon–Fri. Recover today.' },
         { goal: cap(6 * ws), label: 'Armstrong — 5 max sets', detail: '5 max-effort sets, 90 sec rest between. Morning: 3 max sets of pushups.' },
@@ -550,7 +554,7 @@
       if (dow === 0) return { goal: null, label: 'Rest day', detail: 'Full recovery before the new week.' };
       if (dow === 6) return { goal: p.test, label: '2-minute max test', detail: 'One all-out 2-minute set. Log the result and watch it climb toward ' + p.test + '.' };
       const daily = adaptVolume(act, p, key, 5, 50);
-      return { goal: daily, label: 'Volume day — ' + daily + ' reps', detail: 'Grease the groove: sub-max sets spread across the day. Auto-adjusts +5% off last week (NSW cap ' + (p.cap || 200) + '/day).' };
+      return { goal: daily, label: 'Volume day — ' + daily + ' reps', detail: 'Grease the groove: sub-max sets spread across the day. Auto-adjusts +5% off what you actually did last week.' };
     },
     plank(p, dow, act, key) {
       if (dow === 0) return { goal: null, label: 'Rest day', detail: 'Core recovers fast, but take one day off.' };
@@ -608,7 +612,7 @@
           if (v > 0) { logged += v; any = true; }
         }
       }
-      if (any && prescribed > 0 && logged >= prescribed * 0.85 && ws < 10) {
+      if (any && prescribed > 0 && logged >= prescribed * 0.85) {
         a.plan.ws = ws + 1;
         setTimeout(() => toast('Armstrong working set is now ' + (ws + 1) + ' — last week was solid'), 400);
       }
@@ -781,12 +785,12 @@
       return `<section class="card">
         <div class="gc-head"><span class="gc-name">${esc(act.name)}</span>
           ${act.goal != null ? `<span class="gc-frac">target <b>${fmt(act.goal)}</b> ${esc(act.unit)}</span>` : ''}</div>
+        <div class="logpanel"><div class="lp-label">Record</div>${quickRow(act, true)}</div>
         <div class="measure-now">
           <span class="big">${shown != null ? fmt(shown) : '–'}<span style="font-size:16px;font-weight:600;color:var(--ink-2)"> ${esc(act.unit)}</span></span>
           ${deltaTxt ? `<span class="delta">${deltaTxt}</span>` : ''}
           ${v == null ? `<span class="delta">not recorded today</span>` : `<span class="donetag">✓ recorded today</span>`}
         </div>
-        <div class="logpanel"><div class="lp-label">Record</div>${quickRow(act, true)}</div>
       </section>`;
     }
 
@@ -806,7 +810,11 @@
         <span class="gc-name">${esc(act.name)}</span>
         <span class="gc-frac"><b>${fmt(total)}</b>${hasGoal ? ' / ' + fmt(g) : ''} ${esc(act.unit)}</span>
       </div>
-      ${planLine}
+      <div class="logpanel">
+        <div class="lp-label">Log ${act.kind === 'distance' ? 'workout' : 'set'}</div>
+        ${setChips(act)}
+        ${quickRow(act, false)}
+      </div>
       ${hasGoal ? `
         <div class="gc-remain">
           ${done
@@ -818,11 +826,7 @@
         </div>
         ${!done ? `<div class="hint">${remainHint(act, remain)}</div>` : ''}`
       : ''}
-      <div class="logpanel">
-        <div class="lp-label">Log ${act.kind === 'distance' ? 'workout' : 'set'}</div>
-        ${setChips(act)}
-        ${quickRow(act, false)}
-      </div>
+      ${planLine}
     </section>`;
   }
 
@@ -832,21 +836,21 @@
     if (!active.length) return '';
     const unmet = active.filter(a => goalHit(a, key) === false);
     if (!unmet.length) {
-      return `<div class="banner alldone"><span class="bicon">🏁</span><div><strong>All goals hit today.</strong><div class="sub">Every daily goal is in the books.</div></div></div>`;
+      return `<div class="banner alldone"><span class="bicon">🏁</span><div><strong>All goals hit today.</strong></div></div>`;
     }
     const items = unmet.map(a => {
       const remain = goalForDay(a, key) - (dayValue(a, key) || 0);
       return a.name + ' — ' + fmt(remain) + ' ' + a.unit + ' to go';
     }).join(' · ');
-    return `<div class="banner"><span class="bicon">⏱</span><div><strong>Still on the board:</strong> ${esc(items)}<div class="sub">Log as you go — totals update instantly.</div></div></div>`;
+    return `<div class="banner"><span class="bicon">⏱</span><div><strong>Still on the board:</strong> ${esc(items)}</div></div>`;
   }
 
   function renderActivity(act) {
     view.innerHTML = `
       ${memoryOnly ? `<div class="warnbanner">Storage is blocked in this browser — data won't survive a reload. Use Manage → Export to back up.</div>` : ''}
-      ${dailyBanner()}
       <div class="eyebrow">Today</div>
       ${goalCard(act)}
+      ${dailyBanner()}
       <div class="eyebrow">Progress</div>
       ${progressBlock([act])}
     `;
@@ -968,9 +972,8 @@
     const acts = state.activities.filter(a => a.group === 'health');
     view.innerHTML = `
       ${memoryOnly ? `<div class="warnbanner">Storage is blocked in this browser — data won't survive a reload. Use Manage → Export to back up.</div>` : ''}
-      ${dailyBanner()}
       ${acts.length
-        ? `<div class="eyebrow">Today — Health</div>` + acts.map(goalCard).join('')
+        ? `<div class="eyebrow">Today — Health</div>` + acts.map(goalCard).join('') + dailyBanner()
           + `<div class="eyebrow">Progress</div>` + progressBlock(acts)
         : `<div class="empty">Nothing in Health yet — add water, weight, or sleep in Manage.</div>`}
     `;
@@ -1012,7 +1015,7 @@
       }
       if (v > 0) {
         bars += `<path d="${topRounded(x, Math.min(y(v), PADT + plotH - 2), bw, PADT + plotH)}"
-          fill="${hit ? 'var(--good)' : 'var(--accent)'}" opacity="${isToday ? 1 : 0.85}" data-tip="${tip}"></path>`;
+          fill="${hit ? 'var(--accent2)' : 'var(--accent)'}" opacity="${isToday ? 1 : 0.85}" data-tip="${tip}"></path>`;
       }
       bars += `<rect x="${x - 1}" y="${PADT}" width="${bw + 2}" height="${plotH}" fill="transparent" data-tip="${tip}"></rect>`;
       if ((i === maxIdx && v > 0) || (isToday && v > 0)) {
