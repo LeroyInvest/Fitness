@@ -200,7 +200,10 @@
 
   .chartwrap { overflow-x: auto; }
   .chart-title { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
-  .chart-title .ct { font-weight: 700; font-size: 14.5px; }
+  .chart-title .ct {
+    font-family: "Avenir Next Condensed", "Helvetica Neue Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+    font-weight: 700; font-size: 14.5px; text-transform: uppercase; letter-spacing: .09em;
+  }
   .chart-title .cs { color: var(--muted); font-size: 12.5px; }
   svg.viz { width: 100%; height: auto; display: block; }
   svg.viz text { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -968,7 +971,7 @@
       ${chips}
       <section class="card"><div class="chartwrap">${chart}</div></section>
       <section class="card">
-        <div class="chart-title"><span class="ct">All recorded tests</span></div>
+        <div class="chart-title"><span class="ct">Test history</span></div>
         ${recent.length ? `<table class="log"><tbody>${rows}</tbody></table>` : `<div class="empty">No tests yet — first one: ${esc(nextDate)}.</div>`}
       </section>
     `;
@@ -1148,7 +1151,7 @@
       tiles = `<div class="tiles">
         <div class="tile"><div class="tv">${fmt(today || 0)}</div><div class="tk">Today</div><div class="tu">${esc(sel.unit)}</div></div>
         <div class="tile"><div class="tv">${fmt(week)}</div><div class="tk">Last 7 days</div><div class="tu">${esc(sel.unit)}</div></div>
-        <div class="tile"><div class="tv">${avgPace || '–'}</div><div class="tk">Avg pace (${days}d)</div><div class="tu">${avgPace ? 'timed entries' : 'log time to see pace'}</div></div>
+        <div class="tile"><div class="tv">${avgPace || '–'}</div><div class="tk">Avg pace</div><div class="tu">${avgPace ? 'timed entries' : 'log time to see pace'}</div></div>
         <div class="tile"><div class="tv">${(sel.goal != null || sel.plan) ? streak(sel) : '–'}</div><div class="tk">Goal streak</div><div class="tu">${(sel.goal != null || sel.plan) ? 'days' : 'no goal set'}</div></div>
       </div>`;
     } else {
@@ -1158,7 +1161,7 @@
       tiles = `<div class="tiles">
         <div class="tile"><div class="tv">${fmt(today || 0)}</div><div class="tk">Today</div><div class="tu">${esc(sel.unit)}</div></div>
         <div class="tile"><div class="tv">${fmt(week)}</div><div class="tk">Last 7 days</div><div class="tu">${esc(sel.unit)}</div></div>
-        <div class="tile"><div class="tv">${fmt(best)}</div><div class="tk">Best day (${days}d)</div><div class="tu">${esc(sel.unit)}</div></div>
+        <div class="tile"><div class="tv">${fmt(best)}</div><div class="tk">Best day</div><div class="tu">${esc(sel.unit)}</div></div>
         <div class="tile"><div class="tv">${(sel.goal != null || sel.plan) ? streak(sel) : '–'}</div><div class="tk">Goal streak</div><div class="tu">${(sel.goal != null || sel.plan) ? 'days' : 'no goal set'}</div></div>
       </div>`;
     }
@@ -1195,15 +1198,15 @@
       ${chips}
       ${tiles}
       <section class="card">
-        <div class="chart-title"><span class="ct">${esc(sel.name)} — ${isMeasure ? 'trend' : 'daily total'}, last ${days} days</span>${seg}</div>
+        <div class="chart-title"><span class="ct">Performance</span>${seg}</div>
         <div class="chartwrap">${chart}</div>
       </section>
       ${paceChart ? `<section class="card">
-        <div class="chart-title"><span class="ct">Pace — last ${days} days</span><span class="cs">min${esc(pu.lbl)} · lower is faster</span></div>
+        <div class="chart-title"><span class="ct">Pace</span><span class="cs">min${esc(pu.lbl)} · lower is faster</span></div>
         <div class="chartwrap">${paceChart}</div>
       </section>` : ''}
       <section class="card">
-        <div class="chart-title"><span class="ct">Recent entries — ${esc(sel.name)}</span></div>
+        <div class="chart-title"><span class="ct">Recent entries</span></div>
         ${recent.length ? `<table class="log"><tbody>${logRows}</tbody></table>` : `<div class="empty">Nothing logged yet.</div>`}
       </section>
     `;
