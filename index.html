@@ -379,27 +379,64 @@
 
   /* kinds: count | distance | duration -> daily SUM toward goal
             measure -> latest value per day, goal is a target level    */
+  const GROUPS = ['calisthenics', 'abs', 'cardio', 'measurements', 'other'];
+  const GROUP_LABEL = {
+    calisthenics: 'Calisthenics',
+    abs: 'Abs',
+    cardio: 'Swim & Run',
+    measurements: 'Measurements',
+    other: 'More activities'
+  };
+
   function defaultState() {
-    const mk = (name, kind, unit, goal, quick) => ({ id: uid(), name, kind, unit, goal, quick, created: Date.now() });
+    const mk = (name, kind, unit, goal, quick, group) => ({ id: uid(), name, kind, unit, goal, quick, group, created: Date.now() });
     return {
-      v: 1,
+      v: 2,
       activities: [
-        mk('Pushups',     'count',    'reps', 300,  [10, 20, 30]),
-        mk('Pull-ups',    'count',    'reps', null, [5, 10]),
-        mk('Sit-ups',     'count',    'reps', null, [20, 30, 50]),
-        mk('Squats',      'count',    'reps', null, [20, 30, 50]),
-        mk('Run',         'distance', 'mi',   null, [1, 2, 3]),
-        mk('Swim',        'distance', 'yd',   null, [250, 500, 1000]),
-        mk('Plank',       'duration', 'sec',  null, [30, 60, 90]),
-        mk('Body Weight', 'measure',  'lb',   null, [])
+        mk('Pushups',       'count',    'reps', 300,  [10, 20, 30],     'calisthenics'),
+        mk('Pull-ups',      'count',    'reps', null, [5, 10],          'calisthenics'),
+        mk('Sit-ups',       'count',    'reps', null, [20, 30, 50],     'abs'),
+        mk('Plank',         'duration', 'sec',  null, [30, 60, 90],     'abs'),
+        mk('Flutter Kicks', 'count',    'reps', null, [25, 50, 100],    'abs'),
+        mk('Run',           'distance', 'mi',   null, [1, 2, 3],        'cardio'),
+        mk('Swim',          'distance', 'yd',   null, [250, 500, 1000], 'cardio'),
+        mk('Body Weight',   'measure',  'lb',   null, [],               'measurements')
       ],
       entries: [],   // {id, actId, amount, ts}
       ui: { tab: 'today', progressAct: null }
     };
   }
 
+  function guessGroup(a) {
+    if (a.kind === 'measure') return 'measurements';
+    const n = a.name.toLowerCase();
+    if (/sit-?up|plank|flutter|crunch|leg raise|ab/.test(n)) return 'abs';
+    if (/run|swim|bike|row|walk|ruck/.test(n)) return 'cardio';
+    if (a.kind === 'count' || a.kind === 'duration') return 'calisthenics';
+    return 'other';
+  }
+
+  function migrate(s) {
+    if (!s.v || s.v < 2) {
+      // drop Squats unless it has logged history; add Flutter Kicks; group everything
+      const squats = s.activities.find(a => a.name === 'Squats');
+      if (squats && !s.entries.some(e => e.actId === squats.id)) {
+        s.activities = s.activities.filter(a => a.id !== squats.id);
+      }
+      if (!s.activities.some(a => /flutter/i.test(a.name))) {
+        const plankIdx = s.activities.findIndex(a => /plank/i.test(a.name));
+        const fk = { id: uid(), name: 'Flutter Kicks', kind: 'count', unit: 'reps', goal: null, quick: [25, 50, 100], group: 'abs', created: Date.now() };
+        s.activities.splice(plankIdx >= 0 ? plankIdx + 1 : s.activities.length, 0, fk);
+      }
+      s.v = 2;
+    }
+    s.activities.forEach(a => { if (!a.group || !GROUPS.includes(a.group)) a.group = guessGroup(a); });
+    return s;
+  }
+
   let state = store.read() || defaultState();
   if (!state.activities) state = defaultState();
+  state = migrate(state);
   state.ui = state.ui || { tab: 'today', progressAct: null };
   const save = () => store.write(state);
   save();
@@ -429,6 +466,7 @@
   const dateLong = () => new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 
   const actById = id => state.activities.find(a => a.id === id);
+  const sortedActs = () => GROUPS.flatMap(g => state.activities.filter(a => (a.group || 'other') === g));
   const entriesFor = (actId, key) => state.entries.filter(e => e.actId === actId && dayKey(e.ts) === key);
 
   function dayValue(act, key) {
@@ -561,8 +599,6 @@
   function renderToday() {
     const acts = state.activities;
     const withGoal = acts.filter(a => a.goal != null && a.kind !== 'measure');
-    const measures = acts.filter(a => a.kind === 'measure');
-    const rest = acts.filter(a => a.goal == null && a.kind !== 'measure');
 
     let banner = '';
     if (withGoal.length) {
@@ -578,15 +614,16 @@
       }
     }
 
+    const sections = GROUPS.map(g => {
+      const inGroup = acts.filter(a => (a.group || 'other') === g);
+      if (!inGroup.length) return '';
+      return `<div class="eyebrow">${GROUP_LABEL[g]}</div>` + inGroup.map(goalCard).join('');
+    }).join('');
+
     view.innerHTML = `
       ${memoryOnly ? `<div class="warnbanner">Storage is blocked in this browser — data won't survive a reload. Use Manage → Export to back up.</div>` : ''}
       ${banner}
-      ${withGoal.length ? `<div class="eyebrow">Today's goals</div>` : ''}
-      ${withGoal.map(goalCard).join('')}
-      ${measures.length ? `<div class="eyebrow">Measurements</div>` : ''}
-      ${measures.map(goalCard).join('')}
-      ${rest.length ? `<div class="eyebrow">More activities</div>` : ''}
-      ${rest.map(goalCard).join('')}
+      ${sections}
       ${!acts.length ? `<div class="empty">No activities yet — add one in Manage.</div>` : ''}
     `;
   }
@@ -710,7 +747,7 @@
   }
 
   function renderProgress() {
-    const acts = state.activities;
+    const acts = sortedActs();
     if (!acts.length) { view.innerHTML = `<div class="empty">Add an activity in Manage to see progress.</div>`; return; }
     let sel = actById(state.ui.progressAct) || acts[0];
 
@@ -781,7 +818,7 @@
   /* ---------- MANAGE ---------- */
   function renderManage() {
     const kindLabel = { count: 'reps · daily total', distance: 'distance · daily total', duration: 'time · daily total', measure: 'measurement · latest value' };
-    const rows = state.activities.map(a => `
+    const rows = sortedActs().map(a => `
       <section class="card" data-actrow="${a.id}">
         <div class="gc-head"><span class="mname">${esc(a.name)}<span class="mkind">${kindLabel[a.kind] || a.kind}</span></span></div>
         <div class="mgrid" style="margin-top:10px">
@@ -790,6 +827,8 @@
           <div class="field"><label>${a.kind === 'measure' ? 'Target' : 'Daily goal'} (blank = none)</label>
             <input data-f="goal" type="number" inputmode="decimal" step="any" min="0" value="${a.goal != null ? a.goal : ''}" placeholder="none"></div>
           <div class="field"><label>Quick buttons (comma-sep)</label><input data-f="quick" value="${esc((a.quick || []).join(', '))}"></div>
+          <div class="field"><label>Section</label>
+            <select data-f="group">${GROUPS.map(g => `<option value="${g}" ${a.group === g ? 'selected' : ''}>${GROUP_LABEL[g]}</option>`).join('')}</select></div>
         </div>
         <div class="mactions">
           <button class="btn primary" data-action="save-act" data-act="${a.id}">Save</button>
@@ -813,6 +852,8 @@
             </select></div>
           <div class="field"><label>Unit</label><input id="na-unit" placeholder="reps, mi, sec, lb…"></div>
           <div class="field"><label>Daily goal / target (optional)</label><input id="na-goal" type="number" inputmode="decimal" step="any" min="0" placeholder="none"></div>
+          <div class="field"><label>Section</label>
+            <select id="na-group">${GROUPS.map(g => `<option value="${g}">${GROUP_LABEL[g]}</option>`).join('')}</select></div>
         </div>
         <div class="mactions"><button class="btn primary" data-action="add-act">Add activity</button></div>
       </section>
@@ -929,6 +970,7 @@
       a.unit = row.querySelector('[data-f="unit"]').value.trim() || a.unit;
       a.goal = g === '' ? null : Math.max(0, parseFloat(g)) || null;
       a.quick = row.querySelector('[data-f="quick"]').value.split(',').map(s => parseFloat(s.trim())).filter(n => n > 0).slice(0, 6);
+      a.group = row.querySelector('[data-f="group"]').value;
       save(); toast('Saved ' + a.name); render();
     }
     else if (act === 'del-act') {
@@ -946,7 +988,8 @@
       const kind = $('#na-kind').value;
       const unit = $('#na-unit').value.trim() || (kind === 'count' ? 'reps' : kind === 'distance' ? 'mi' : kind === 'duration' ? 'min' : 'lb');
       const g = $('#na-goal').value.trim();
-      state.activities.push({ id: uid(), name, kind, unit, goal: g === '' ? null : Math.max(0, parseFloat(g)) || null, quick: [], created: Date.now() });
+      const group = kind === 'measure' ? 'measurements' : ($('#na-group').value || 'other');
+      state.activities.push({ id: uid(), name, kind, unit, goal: g === '' ? null : Math.max(0, parseFloat(g)) || null, quick: [], group, created: Date.now() });
       save(); toast('Added ' + name); render();
     }
     else if (act === 'export') exportBackup();
