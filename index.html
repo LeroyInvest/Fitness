@@ -265,6 +265,12 @@
     padding: 0 16px; scroll-padding: 0 16px;
   }
   nav.tabs .inner::-webkit-scrollbar { display: none; }
+  @media (hover: hover) and (pointer: fine) {
+    nav.tabs .inner { scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
+    nav.tabs .inner::-webkit-scrollbar { display: block; height: 6px; }
+    nav.tabs .inner::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 999px; }
+    nav.tabs .inner::-webkit-scrollbar-track { background: transparent; }
+  }
   nav.tabs button {
     flex: 1 0 auto; min-width: 88px; border: 0; background: transparent; color: var(--muted);
     padding: 14px 14px 13px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px;
@@ -314,7 +320,7 @@
   'use strict';
 
   /* ================= storage ================= */
-  const APP_VERSION = '11';
+  const APP_VERSION = '12';
   const LS_KEY = 'fitlog.v1';
   let memoryOnly = false;
   const store = {
@@ -1708,6 +1714,14 @@
     if (syncCfg.get().token && Date.now() - syncStatus.lastPull > 60000) pullSync(false);
   });
   setInterval(() => { if (todayKey() !== lastDay) { lastDay = todayKey(); render(); } }, 60000);
+
+  /* mouse users: vertical wheel scrolls the tab bar sideways */
+  $('#tabbar').addEventListener('wheel', ev => {
+    if (Math.abs(ev.deltaY) > Math.abs(ev.deltaX)) {
+      ev.preventDefault();
+      ev.currentTarget.scrollLeft += ev.deltaY;
+    }
+  }, { passive: false });
 
   armstrongAutoProgress();
   render();
