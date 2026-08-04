@@ -448,12 +448,68 @@
     return s;
   }
 
+  /* IndexedDB mirror — second copy of the data that survives when localStorage is wiped */
+  const idb = {
+    open() {
+      return new Promise((res, rej) => {
+        const r = indexedDB.open('fitlog', 1);
+        r.onupgradeneeded = () => r.result.createObjectStore('kv');
+        r.onsuccess = () => res(r.result);
+        r.onerror = () => rej(r.error);
+      });
+    },
+    async set(v) {
+      try { const db = await this.open(); db.transaction('kv', 'readwrite').objectStore('kv').put(v, 'state'); }
+      catch (e) { /* mirror is best-effort */ }
+    },
+    async get() {
+      try {
+        const db = await this.open();
+        return await new Promise((res, rej) => {
+          const rq = db.transaction('kv').objectStore('kv').get('state');
+          rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error);
+        });
+      } catch (e) { return null; }
+    }
+  };
+
+  const hadLocal = !!store.read();
   let state = store.read() || defaultState();
   if (!state.activities) state = defaultState();
   state = migrate(state);
   state.ui = state.ui || { tab: 'calisthenics', progressAct: null };
-  const save = () => store.write(state);
+
+  /* don't write the mirror until we've checked it — a fresh boot must not clobber real data */
+  let mirrorReady = hadLocal;
+  const save = () => { store.write(state); if (mirrorReady) idb.set(JSON.stringify(state)); };
   save();
+
+  /* ask the browser to protect our storage from eviction where supported */
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+
+  /* localStorage came back empty but the mirror has real data -> restore it */
+  if (!hadLocal) {
+    idb.get().then(raw => {
+      try {
+        if (raw) {
+          const mirrored = JSON.parse(raw);
+          const hasData = mirrored && Array.isArray(mirrored.entries) &&
+            (mirrored.entries.length > 0 || (mirrored.tests || []).length > 0);
+          const currentEmpty = state.entries.length === 0 && state.tests.length === 0;
+          if (hasData && currentEmpty) {
+            state = migrate(mirrored);
+            state.ui = state.ui || { tab: 'calisthenics', progressAct: null };
+            mirrorReady = true;
+            save(); render();
+            toast('Restored your log from the device backup');
+            return;
+          }
+        }
+      } catch (e) { /* corrupt mirror — ignore */ }
+      mirrorReady = true;
+      save();
+    });
+  }
 
   /* ================= helpers ================= */
   const $ = sel => document.querySelector(sel);
@@ -1265,7 +1321,7 @@
             <input id="importFile" type="file" accept=".json,application/json" style="display:none"></label>
           <button class="btn danger" data-action="reset">Erase everything…</button>
         </div>
-        <div class="note">Data lives in this browser (${state.entries.length} entries stored). Export a JSON backup now and then — it restores everything via Import.</div>
+        <div class="note">Data is saved on this device two ways (browser storage + a mirror), ${state.entries.length} entries stored. Still worth exporting a JSON backup now and then — it restores everything via Import.</div>
       </section>
     `;
   }
