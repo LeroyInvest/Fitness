@@ -481,11 +481,121 @@
 
   /* don't write the mirror until we've checked it — a fresh boot must not clobber real data */
   let mirrorReady = hadLocal;
-  const save = () => { store.write(state); if (mirrorReady) idb.set(JSON.stringify(state)); };
+  const snapOf = () => JSON.stringify([state.v, state.activities, state.entries, state.tests]);
+  let lastSnapshot = snapOf();   // baseline: booting doesn't count as a change
+  const save = () => {
+    const snap = snapOf();
+    if (snap !== lastSnapshot) { lastSnapshot = snap; state.savedAt = Date.now(); schedulePush(); }
+    store.write(state);
+    if (mirrorReady) idb.set(JSON.stringify(state));
+  };
   save();
 
   /* ask the browser to protect our storage from eviction where supported */
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+
+  /* ---- cross-device sync via a secret GitHub Gist on the user's account ---- */
+  const SYNC_KEY = 'fitlog.sync';
+  const GIST_FILE = 'training-log-data.json';
+  const syncCfg = {
+    get() { try { return JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; } catch (e) { return {}; } },
+    set(c) { try { localStorage.setItem(SYNC_KEY, JSON.stringify(c)); } catch (e) {} }
+  };
+  let syncStatus = { state: syncCfg.get().token ? 'idle' : 'off', last: 0, lastPull: 0, error: null };
+
+  async function gistApi(path, opts = {}) {
+    const res = await fetch('https://api.github.com' + path, {
+      ...opts,
+      headers: {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': 'Bearer ' + syncCfg.get().token,
+        ...(opts.body ? { 'Content-Type': 'application/json' } : {})
+      }
+    });
+    if (!res.ok) throw Object.assign(new Error('HTTP ' + res.status), { status: res.status });
+    return res.status === 204 ? null : res.json();
+  }
+  const syncPayload = () => JSON.stringify({
+    v: state.v, savedAt: state.savedAt || 0,
+    activities: state.activities, entries: state.entries, tests: state.tests
+  }, null, 1);
+
+  async function findOrCreateGist() {
+    const cfg = syncCfg.get();
+    if (cfg.gistId) return cfg.gistId;
+    const gists = await gistApi('/gists?per_page=100');
+    const hit = (gists || []).find(g => g.files && g.files[GIST_FILE]);
+    if (hit) { syncCfg.set({ ...cfg, gistId: hit.id }); return hit.id; }
+    const created = await gistApi('/gists', {
+      method: 'POST',
+      body: JSON.stringify({ description: 'Training Log sync data', public: false, files: { [GIST_FILE]: { content: syncPayload() } } })
+    });
+    syncCfg.set({ ...cfg, gistId: created.id });
+    return created.id;
+  }
+
+  function mergeRemote(remote) {
+    if (!remote || !Array.isArray(remote.entries)) return;
+    const byId = arr => Object.fromEntries((arr || []).map(x => [x.id, x]));
+    state.entries = Object.values({ ...byId(remote.entries), ...byId(state.entries) }).sort((a, b) => a.ts - b.ts);
+    state.tests = Object.values({ ...byId(remote.tests), ...byId(state.tests) }).sort((a, b) => a.ts - b.ts);
+    if ((remote.savedAt || 0) > (state.savedAt || 0) && Array.isArray(remote.activities) && remote.activities.length) {
+      state.activities = remote.activities;   // goals/settings: most recently edited device wins
+      state.v = remote.v || state.v;
+      state.savedAt = remote.savedAt;
+    }
+    state = migrate(state);
+  }
+
+  let pushTimer = null;
+  function schedulePush() {
+    if (!syncCfg.get().token) return;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(pushSync, 2500);
+  }
+  function syncFail(e) {
+    syncStatus = { ...syncStatus, state: 'error', error: e && e.status === 401 ? 'Token rejected — generate a new one' : 'Sync failed (offline?)' };
+    updateSyncNote();
+  }
+  async function pushSync() {
+    if (!syncCfg.get().token) return;
+    try {
+      syncStatus.state = 'syncing'; updateSyncNote();
+      const id = await findOrCreateGist();
+      await gistApi('/gists/' + id, { method: 'PATCH', body: JSON.stringify({ files: { [GIST_FILE]: { content: syncPayload() } } }) });
+      syncStatus = { ...syncStatus, state: 'ok', last: Date.now(), error: null };
+      updateSyncNote();
+    } catch (e) { syncFail(e); }
+  }
+  async function pullSync(announce) {
+    if (!syncCfg.get().token) return;
+    try {
+      syncStatus.state = 'syncing'; updateSyncNote();
+      const id = await findOrCreateGist();
+      const g = await gistApi('/gists/' + id);
+      const f = g && g.files && g.files[GIST_FILE];
+      if (f) {
+        const content = f.truncated ? await (await fetch(f.raw_url)).text() : f.content;
+        const before = state.entries.length + state.tests.length;
+        mergeRemote(JSON.parse(content));
+        save(); render();
+        const gained = state.entries.length + state.tests.length - before;
+        if (announce && gained > 0) toast('Synced — pulled ' + gained + ' new entr' + (gained === 1 ? 'y' : 'ies'));
+      }
+      syncStatus = { ...syncStatus, state: 'ok', last: Date.now(), lastPull: Date.now(), error: null };
+      updateSyncNote();
+    } catch (e) { syncFail(e); }
+  }
+  function syncLabel() {
+    if (!syncCfg.get().token) return 'Not connected';
+    if (syncStatus.state === 'syncing') return 'Syncing…';
+    if (syncStatus.state === 'error') return syncStatus.error;
+    return syncStatus.last ? 'Synced · last ' + timeShort(syncStatus.last) : 'Connected';
+  }
+  function updateSyncNote() {
+    const el = document.getElementById('syncStatus');
+    if (el) el.textContent = syncLabel();
+  }
 
   /* localStorage came back empty but the mirror has real data -> restore it */
   if (!hadLocal) {
@@ -1313,6 +1423,21 @@
         </div>
         <div class="mactions"><button class="btn primary" data-action="add-act">Add activity</button></div>
       </section>
+      <div class="eyebrow">Sync across devices</div>
+      <section class="card">
+        <div class="gc-head"><span class="mname">GitHub sync</span><span class="mkind" id="syncStatus">${syncLabel()}</span></div>
+        ${syncCfg.get().token ? `
+          <div class="mactions">
+            <button class="btn primary" data-action="sync-now">Sync now</button>
+            <button class="btn danger" data-action="sync-off">Disconnect…</button>
+          </div>
+          <div class="note">Syncs automatically after every log and whenever the app opens. Data lives in a secret Gist on your GitHub account — connect the same token on each device.</div>`
+        : `
+          <div class="field" style="margin-top:10px"><label>GitHub token (gist scope only)</label>
+            <input id="sync-token" type="password" placeholder="ghp_…" autocomplete="off"></div>
+          <div class="mactions"><button class="btn primary" data-action="sync-on">Connect</button></div>
+          <div class="note">One-time setup: github.com/settings/tokens → “Generate new token (classic)” → name it, tick ONLY the “gist” box → Generate. Paste the same token here on every device you use. Your log then syncs through a secret Gist on your own GitHub account — no other server involved.</div>`}
+      </section>
       <div class="eyebrow">Your data</div>
       <section class="card">
         <div class="datarow">
@@ -1470,6 +1595,24 @@
       state.activities.push({ id: uid(), name, kind, unit, goal: g === '' ? null : Math.max(0, parseFloat(g)) || null, quick: [], group, created: Date.now() });
       save(); toast('Added ' + name); render();
     }
+    else if (act === 'sync-on') {
+      const inp = $('#sync-token');
+      const token = inp && inp.value.trim();
+      if (!token) { toast('Paste your GitHub token first'); return; }
+      syncCfg.set({ token });
+      syncStatus = { state: 'idle', last: 0, lastPull: 0, error: null };
+      toast('Connected — syncing…');
+      pullSync(true).then(() => pushSync()).then(() => render());
+    }
+    else if (act === 'sync-now') { pullSync(true).then(() => pushSync()); }
+    else if (act === 'sync-off') {
+      arm(el, 'Really disconnect?', () => {
+        syncCfg.set({});
+        syncStatus = { state: 'off', last: 0, lastPull: 0, error: null };
+        toast('Sync disconnected — data stays on this device');
+        render();
+      });
+    }
     else if (act === 'export') exportBackup();
     else if (act === 'reset') {
       arm(el, 'Tap again to erase ALL data', () => {
@@ -1544,11 +1687,14 @@
   /* re-render when the day rolls over or tab becomes visible again */
   let lastDay = todayKey();
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && todayKey() !== lastDay) { lastDay = todayKey(); render(); }
+    if (document.hidden) return;
+    if (todayKey() !== lastDay) { lastDay = todayKey(); render(); }
+    if (syncCfg.get().token && Date.now() - syncStatus.lastPull > 60000) pullSync(false);
   });
   setInterval(() => { if (todayKey() !== lastDay) { lastDay = todayKey(); render(); } }, 60000);
 
   armstrongAutoProgress();
   render();
+  pullSync(true);
 })();
 </script>
