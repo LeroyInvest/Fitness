@@ -314,6 +314,7 @@
   'use strict';
 
   /* ================= storage ================= */
+  const APP_VERSION = '11';
   const LS_KEY = 'fitlog.v1';
   let memoryOnly = false;
   const store = {
@@ -553,9 +554,14 @@
     clearTimeout(pushTimer);
     pushTimer = setTimeout(pushSync, 2500);
   }
+  let syncErrorToasted = false;
   function syncFail(e) {
-    syncStatus = { ...syncStatus, state: 'error', error: e && e.status === 401 ? 'Token rejected — generate a new one' : 'Sync failed (offline?)' };
+    const msg = e && e.status === 401 ? 'Token rejected — generate a new one'
+      : e && e.status === 403 ? 'GitHub said no (403) — check the token has the gist scope'
+      : 'Sync failed (offline?)';
+    syncStatus = { ...syncStatus, state: 'error', error: msg };
     updateSyncNote();
+    if (!syncErrorToasted) { syncErrorToasted = true; toast('⚠ Sync problem: ' + msg); }
   }
   async function pushSync() {
     if (!syncCfg.get().token) return;
@@ -592,9 +598,15 @@
     if (syncStatus.state === 'error') return syncStatus.error;
     return syncStatus.last ? 'Synced · last ' + timeShort(syncStatus.last) : 'Connected';
   }
+  function syncBadge() {
+    if (!syncCfg.get().token) return '';
+    return syncStatus.state === 'error' ? ' · ⚠ sync' : ' · ✓ sync';
+  }
   function updateSyncNote() {
     const el = document.getElementById('syncStatus');
     if (el) el.textContent = syncLabel();
+    const d = document.getElementById('topDate');
+    if (d) d.textContent = dateLong() + syncBadge();
   }
 
   /* localStorage came back empty but the mirror has real data -> restore it */
@@ -884,7 +896,7 @@
   function render(scrollTop) {
     const tab = resolveTab();
     renderNav(tab);
-    $('#topDate').textContent = dateLong();
+    $('#topDate').textContent = dateLong() + syncBadge();
     if (tab === 'manage') renderManage();
     else if (tab === 'health') renderHealth();
     else if (tab === 'standards') renderStandards();
@@ -1446,7 +1458,7 @@
             <input id="importFile" type="file" accept=".json,application/json" style="display:none"></label>
           <button class="btn danger" data-action="reset">Erase everything…</button>
         </div>
-        <div class="note">Data is saved on this device two ways (browser storage + a mirror), ${state.entries.length} entries stored. Still worth exporting a JSON backup now and then — it restores everything via Import.</div>
+        <div class="note">Data is saved on this device two ways (browser storage + a mirror), ${state.entries.length} entries stored. Still worth exporting a JSON backup now and then — it restores everything via Import. · Training Log build ${APP_VERSION}</div>
       </section>
     `;
   }
@@ -1601,8 +1613,12 @@
       if (!token) { toast('Paste your GitHub token first'); return; }
       syncCfg.set({ token });
       syncStatus = { state: 'idle', last: 0, lastPull: 0, error: null };
+      syncErrorToasted = false;
       toast('Connected — syncing…');
-      pullSync(true).then(() => pushSync()).then(() => render());
+      pullSync(true).then(() => pushSync()).then(() => {
+        if (syncStatus.state === 'ok') toast('✓ Sync active — ' + state.entries.length + ' entries in the cloud');
+        render();
+      });
     }
     else if (act === 'sync-now') { pullSync(true).then(() => pushSync()); }
     else if (act === 'sync-off') {
