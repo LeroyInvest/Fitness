@@ -384,7 +384,7 @@
   'use strict';
 
   /* ================= storage ================= */
-  const APP_VERSION = '15';
+  const APP_VERSION = '16';
   const LS_KEY = 'fitlog.v1';
   let memoryOnly = false;
   const store = {
@@ -633,11 +633,17 @@
     state = migrate(state);
   }
 
-  let pushTimer = null;
+  let pushTimer = null, pushPending = false;
   function schedulePush() {
     if (!syncCfg.get().token) return;
+    pushPending = true;
     clearTimeout(pushTimer);
-    pushTimer = setTimeout(pushSync, 2500);
+    pushTimer = setTimeout(pushSync, 1000);
+  }
+  function flushPush() {
+    if (!pushPending || !syncCfg.get().token) return;
+    clearTimeout(pushTimer);
+    pushSync(true);
   }
   let syncErrorToasted = false;
   function syncFail(e) {
@@ -648,12 +654,13 @@
     updateSyncNote();
     if (!syncErrorToasted) { syncErrorToasted = true; toast('⚠ Sync problem: ' + msg); }
   }
-  async function pushSync() {
+  async function pushSync(urgent) {
     if (!syncCfg.get().token) return;
     try {
+      pushPending = false;
       syncStatus.state = 'syncing'; updateSyncNote();
       const id = await findOrCreateGist();
-      await gistApi('/gists/' + id, { method: 'PATCH', body: JSON.stringify({ files: { [GIST_FILE]: { content: syncPayload() } } }) });
+      await gistApi('/gists/' + id, { method: 'PATCH', keepalive: !!urgent, body: JSON.stringify({ files: { [GIST_FILE]: { content: syncPayload() } } }) });
       syncStatus = { ...syncStatus, state: 'ok', last: Date.now(), error: null };
       updateSyncNote();
     } catch (e) { syncFail(e); }
@@ -684,7 +691,7 @@
     return syncStatus.last ? 'Synced · last ' + timeShort(syncStatus.last) : 'Connected';
   }
   function syncBadge() {
-    if (!syncCfg.get().token) return '';
+    if (!syncCfg.get().token) return ' · ⚠ not synced';
     return syncStatus.state === 'error' ? ' · ⚠ sync' : ' · ✓ sync';
   }
   function updateSyncNote() {
@@ -1197,7 +1204,9 @@
     }).join('');
     view.innerHTML = `
       ${memoryOnly ? `<div class="warnbanner">Storage is blocked in this browser — data won't survive a reload. Use Settings → Export to back up.</div>` : ''}
-      ${!syncCfg.get().token && !state.entries.length ? `<div class="banner"><span class="bicon">☁</span><div><strong>Fresh install?</strong> If you had sync connected before, paste your GitHub token in Settings → GitHub sync and your whole log restores itself.</div></div>` : ''}
+      ${!syncCfg.get().token ? (!state.entries.length
+        ? `<div class="warnbanner"><strong>Not synced.</strong> Had sync before? Open your setup link or paste your token in Settings → GitHub sync and your whole log restores itself.</div>`
+        : `<div class="warnbanner"><strong>Not synced</strong> — entries live only on this device and are lost if the app is removed. Connect in Settings → GitHub sync.</div>`) : ''}
       ${sections || `<div class="empty">No activities yet — add one in Settings.</div>`}
       ${dailyBanner()}
     `;
@@ -1610,9 +1619,10 @@
         ${syncCfg.get().token ? `
           <div class="mactions">
             <button class="btn primary" data-action="sync-now">Sync now</button>
+            <button class="btn" data-action="sync-copylink">Copy setup link</button>
             <button class="btn danger" data-action="sync-off">Disconnect…</button>
           </div>
-          <div class="note">Syncs automatically after every log and whenever the app opens. Data lives in a secret Gist on your GitHub account — connect the same token on each device.</div>`
+          <div class="note">Syncs after every log and whenever the app opens. <b>Save your setup link in Notes:</b> opening it on any fresh install or new device reconnects sync and restores the whole log in one tap.</div>`
         : `
           <div class="field" style="margin-top:10px"><label>GitHub token (gist scope only)</label>
             <input id="sync-token" type="password" placeholder="ghp_…" autocomplete="off"></div>
@@ -1898,6 +1908,13 @@
       });
     }
     else if (act === 'sync-now') { pullSync(true).then(() => pushSync()); }
+    else if (act === 'sync-copylink') {
+      const link = location.origin + location.pathname + '#st=' + (syncCfg.get().token || '');
+      (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(
+        () => toast('Setup link copied — save it in Notes'),
+        () => { prompt('Copy this setup link:', link); }
+      );
+    }
     else if (act === 'sync-off') {
       arm(el, 'Really disconnect?', () => {
         syncCfg.set({});
@@ -1989,10 +2006,11 @@
   /* re-render when the day rolls over or tab becomes visible again */
   let lastDay = todayKey();
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) return;
+    if (document.hidden) { flushPush(); return; }   // going background: force-push anything pending
     if (todayKey() !== lastDay) { lastDay = todayKey(); render(); }
     if (syncCfg.get().token && Date.now() - syncStatus.lastPull > 60000) pullSync(false);
   });
+  window.addEventListener('pagehide', flushPush);
   setInterval(() => { if (todayKey() !== lastDay) { lastDay = todayKey(); render(); } }, 60000);
 
   /* timer tick: hold-elapsed display + rest countdown */
@@ -2011,6 +2029,15 @@
       ev.currentTarget.scrollLeft += ev.deltaY;
     }
   }, { passive: false });
+
+  /* setup link: opening the app with #st=<token> connects sync instantly (fresh installs, new devices) */
+  const hashMatch = location.hash.match(/^#st=([A-Za-z0-9_]+)$/);
+  if (hashMatch) {
+    syncCfg.set({ token: hashMatch[1] });
+    syncStatus = { state: 'idle', last: 0, lastPull: 0, error: null };
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+    toast('Sync connected from setup link — restoring…');
+  }
 
   /* offline support: install the service worker (github.io only — no-op elsewhere) */
   if ('serviceWorker' in navigator && location.protocol === 'https:') {
