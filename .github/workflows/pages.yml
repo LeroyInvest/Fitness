@@ -27,6 +27,9 @@ jobs:
           mkdir _site
           printf '<!doctype html>\n' > _site/index.html
           cat index.html >> _site/index.html
+          cp manifest.webmanifest sw.js _site/
+          cp -r icons _site/icons
+          sed -i "s/__BUILD__/${GITHUB_SHA:0:12}/" _site/sw.js
       - uses: actions/configure-pages@v5
         with:
           enablement: true

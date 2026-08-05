@@ -1,5 +1,13 @@
 <title>Training Log</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0C0D0F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Training Log">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
 <style>
   :root {
     --bg: #0C0D0F;
@@ -272,14 +280,69 @@
     nav.tabs .inner::-webkit-scrollbar-track { background: transparent; }
   }
   nav.tabs button {
-    flex: 1 0 auto; min-width: 88px; border: 0; background: transparent; color: var(--muted);
-    padding: 14px 14px 13px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px;
+    flex: 1 1 0; min-width: 0; border: 0; background: transparent; color: var(--muted);
+    padding: 14px 6px 13px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px;
   }
   nav.tabs button.sel { color: var(--accent-ink); }
   nav.tabs button .tlabel {
-    font-size: 13px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; white-space: nowrap;
+    font-size: 11.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; white-space: nowrap;
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis;
   }
   nav.tabs button svg { width: 30px; height: 30px; }
+
+  /* ---- compact today cards ---- */
+  .card.compact { padding: 12px 14px; cursor: pointer; }
+  .card.compact:active { background: var(--surface-2); }
+  .cc-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .cc-right { display: inline-flex; align-items: baseline; gap: 8px; }
+  .chev { color: var(--muted); font-size: 20px; line-height: 1; }
+  .bar.slim { height: 7px; margin: 8px 0 4px; }
+  .cc-row2 { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 6px; }
+  .cc-quicks { display: inline-flex; gap: 6px; flex: 0 0 auto; }
+  .qbtn.sm { padding: 8px 13px; font-size: 14.5px; min-width: 52px; border-radius: 10px; }
+  .qbtn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .qbtn.primary:active { background: var(--accent-deep); }
+
+  .backbtn {
+    border: 0; background: transparent; color: var(--accent-ink); font-weight: 700; font-size: 16px;
+    padding: 4px 2px 10px; cursor: pointer;
+    font-family: "Avenir Next Condensed", "Helvetica Neue Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+    letter-spacing: .06em; text-transform: uppercase;
+  }
+
+  /* ---- hold timer + rest pill ---- */
+  .holdrow { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+  .holdtime { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 90px; }
+  #restpill {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(118px + env(safe-area-inset-bottom, 0px)); z-index: 55;
+    background: var(--accent); color: #fff; font-size: 14px; font-weight: 700;
+    padding: 9px 8px 9px 16px; border-radius: 999px; display: none; align-items: center; gap: 10px;
+    box-shadow: 0 4px 18px rgba(0,0,0,.4); font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  #restpill b { font-size: 16px; }
+  #restpill button {
+    border: 0; background: rgba(255,255,255,.2); color: #fff; font-weight: 700; font-size: 13px;
+    padding: 5px 12px; border-radius: 999px; cursor: pointer;
+  }
+
+  /* ---- calendar ---- */
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 6px; }
+  .cal-wd { text-align: center; font-size: 11px; color: var(--muted); font-weight: 700; padding: 2px 0; }
+  .cal-cell {
+    aspect-ratio: 1; border-radius: 10px; border: 1px solid transparent; background: var(--surface-2);
+    color: var(--ink-2); font-size: 13.5px; font-weight: 600; cursor: pointer;
+    font-variant-numeric: tabular-nums; display: flex; align-items: center; justify-content: center;
+  }
+  .cal-cell.pad { background: transparent; cursor: default; }
+  .cal-cell:disabled { opacity: .35; cursor: default; }
+  .cal-cell.part { border-color: var(--accent); color: var(--ink); }
+  .cal-cell.hit { background: var(--accent2); color: #fff; }
+  .cal-cell.today { box-shadow: inset 0 0 0 2px var(--ink-2); }
+  .cal-cell.sel { box-shadow: inset 0 0 0 2px var(--accent); color: var(--ink); }
+  .cal-day { border-top: 1px solid var(--hairline); margin-top: 12px; padding-top: 10px; }
+  .ct-strong { font-weight: 700; font-size: 15px; }
+  .seg button:disabled { opacity: .35; cursor: default; }
 
   #toast {
     position: fixed; left: 50%; transform: translateX(-50%);
@@ -313,6 +376,7 @@
 </nav>
 
 <div id="toast" role="status"></div>
+<div id="restpill" role="timer"></div>
 <div id="tip"></div>
 
 <script>
@@ -320,7 +384,7 @@
   'use strict';
 
   /* ================= storage ================= */
-  const APP_VERSION = '12';
+  const APP_VERSION = '13';
   const LS_KEY = 'fitlog.v1';
   let memoryOnly = false;
   const store = {
@@ -864,7 +928,9 @@
     timer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="13.5" r="7.5"/><path d="M12 10v4l2.5 2M9.5 2.5h5"/></svg>',
     heart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 20.5S4.5 16 3 11.5C1.9 8.4 4 5.5 7 5.5c2 0 3.6 1.2 5 3 1.4-1.8 3-3 5-3 3 0 5.1 2.9 4 6-1.5 4.5-9 9-9 9z"/></svg>',
     sliders: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8h10M18 8h2M4 16h2M10 16h10"/><circle cx="16" cy="8" r="2"/><circle cx="8" cy="16" r="2"/></svg>',
-    medal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="14.5" r="5.5"/><path d="M12 12.2l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2L9.1 14.3l2-.3z" fill="currentColor" stroke="none"/><path d="M8.5 9.5L5.5 3.5M15.5 9.5l3-6M9.8 3.5h4.4"/></svg>'
+    medal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="14.5" r="5.5"/><path d="M12 12.2l.9 1.8 2 .3-1.45 1.4.35 2-1.8-.95-1.8.95.35-2L9.1 14.3l2-.3z" fill="currentColor" stroke="none"/><path d="M8.5 9.5L5.5 3.5M15.5 9.5l3-6M9.8 3.5h4.4"/></svg>',
+    target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></svg>',
+    chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19h16M6 19v-6M11 19V9M16 19v-9"/></svg>'
   };
   function iconFor(a) {
     if (a.kind === 'distance') return 'waves';
@@ -873,30 +939,24 @@
     return 'dumbbell';
   }
 
-  const workoutActs = () => sortedActs().filter(a => a.group !== 'health');
+  const TABS = ['today', 'progress', 'standards', 'manage'];
 
   function resolveTab() {
     const t = state.ui.tab;
-    if (t === 'manage' || t === 'health' || t === 'standards') return t;
-    const a = actById(t);
-    if (a) return a.group === 'health' ? 'health' : t;
-    if (GROUPS.includes(t)) {
-      const first = workoutActs().find(x => x.group === t);
-      if (first) return first.id;
-    }
-    const w = workoutActs()[0];
-    return w ? w.id : 'health';
+    if (TABS.includes(t)) return t;
+    const a = actById(t);                       // legacy per-exercise tab value -> open as detail
+    if (a) { state.ui.detail = a.id; }
+    state.ui.tab = 'today';
+    return 'today';
   }
 
   function renderNav(tab) {
     const bar = $('#tabbar');
-    bar.innerHTML = workoutActs().map(a =>
-      `<button data-tab="${a.id}" class="${tab === a.id ? 'sel' : ''}" aria-label="${esc(a.name)}">${ICONS[iconFor(a)]}<span class="tlabel">${esc(a.name)}</span></button>`).join('')
-      + `<button data-tab="health" class="${tab === 'health' ? 'sel' : ''}" aria-label="Health">${ICONS.heart}<span class="tlabel">Health</span></button>`
-      + `<button data-tab="standards" class="${tab === 'standards' ? 'sel' : ''}" aria-label="Standards">${ICONS.medal}<span class="tlabel">Standards</span></button>`
-      + `<button data-tab="manage" class="${tab === 'manage' ? 'sel' : ''}" aria-label="Manage">${ICONS.sliders}<span class="tlabel">Manage</span></button>`;
-    const sel = bar.querySelector('button.sel');
-    if (sel) bar.scrollLeft = Math.max(0, sel.offsetLeft - (bar.clientWidth - sel.offsetWidth) / 2);
+    bar.innerHTML =
+      `<button data-tab="today" class="${tab === 'today' ? 'sel' : ''}" aria-label="Today">${ICONS.target}<span class="tlabel">Today</span></button>`
+      + `<button data-tab="progress" class="${tab === 'progress' ? 'sel' : ''}" aria-label="Progress">${ICONS.chart}<span class="tlabel">Progress</span></button>`
+      + `<button data-tab="standards" class="${tab === 'standards' ? 'sel' : ''}" aria-label="Tests">${ICONS.medal}<span class="tlabel">Tests</span></button>`
+      + `<button data-tab="manage" class="${tab === 'manage' ? 'sel' : ''}" aria-label="Settings">${ICONS.sliders}<span class="tlabel">Settings</span></button>`;
   }
 
   function render(scrollTop) {
@@ -904,9 +964,12 @@
     renderNav(tab);
     $('#topDate').textContent = dateLong() + syncBadge();
     if (tab === 'manage') renderManage();
-    else if (tab === 'health') renderHealth();
     else if (tab === 'standards') renderStandards();
-    else renderActivity(actById(tab));
+    else if (tab === 'progress') renderProgressTab();
+    else {
+      const detail = actById(state.ui.detail);
+      if (detail) renderDetail(detail); else renderToday();
+    }
     if (scrollTop) window.scrollTo(0, 0);   // only on tab switches — in-place updates keep your spot
   }
 
@@ -933,8 +996,38 @@
       aria-pressed="${!!loadToggle[act.id]}">${loadToggle[act.id] ? '✓ ' : ''}${lo.label}</button>`;
   }
 
+  /* hold timer (duration exercises) + rest countdown state */
+  let holdState = null;   // {actId, startTs}
+  let restTimer = null;   // {actId, label, end}
+  let audioCtx = null;
+  function primeAudio() { try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  function beep() {
+    try {
+      if (!audioCtx) return;
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.connect(g); g.connect(audioCtx.destination);
+      o.frequency.value = 880;
+      g.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.35);
+      o.start(); o.stop(audioCtx.currentTime + 0.4);
+    } catch (e) {}
+  }
+  function holdUI(act) {
+    if (holdState && holdState.actId === act.id) {
+      return `<div class="holdrow">
+        <span class="holdtime" id="holdElapsed">0:00</span>
+        <button class="btn primary" data-action="hold-stop" data-act="${act.id}">Stop &amp; log</button>
+        <button class="btn" data-action="hold-cancel">Cancel</button>
+      </div>`;
+    }
+    return `<div class="holdrow"><button class="btn primary" data-action="hold-start" data-act="${act.id}">▶ Start hold timer</button></div>`;
+  }
+
   function quickRow(act, isMeasure) {
-    const btns = (act.quick || []).map(q =>
+    const rep = lastAmount(act);
+    const repBtn = rep && !isMeasure
+      ? `<button class="qbtn primary" data-action="log" data-act="${act.id}" data-amt="${rep}">+${fmt(rep)} again</button>` : '';
+    const btns = repBtn + (act.quick || []).filter(q => q !== rep).map(q =>
       `<button class="qbtn" data-action="log" data-act="${act.id}" data-amt="${q}">+${fmt(q)}</button>`).join('');
     if (act.kind === 'distance') {
       return `<div class="quickrow">${btns}
@@ -945,7 +1038,8 @@
         </form></div>
         ${loadBtn(act) ? `<div class="loadrow">${loadBtn(act)}</div>` : ''}`;
     }
-    return `<div class="quickrow">${btns}
+    return `${act.kind === 'duration' ? holdUI(act) : ''}
+      <div class="quickrow">${btns}
       <form class="qform" data-action="logform" data-act="${act.id}">
         <input type="number" inputmode="decimal" step="any" min="0" placeholder="${esc(act.unit)}" aria-label="Amount in ${esc(act.unit)} for ${esc(act.name)}">
         <button type="submit">${isMeasure ? 'Record' : 'Log'}</button>
@@ -1038,15 +1132,77 @@
     return `<div class="banner"><span class="bicon">⏱</span><div><strong>Still on the board:</strong> ${esc(items)}</div></div>`;
   }
 
-  function renderActivity(act) {
+  function lastAmount(act) {
+    const es = state.entries.filter(e => e.actId === act.id);
+    return es.length ? es[es.length - 1].amount : null;
+  }
+
+  function compactCard(act) {
+    const key = todayKey();
+    if (act.kind === 'measure') {
+      const all = state.entries.filter(e => e.actId === act.id).sort((a, b) => a.ts - b.ts);
+      const latest = all.length ? all[all.length - 1].amount : null;
+      const today = dayValue(act, key);
+      return `<section class="card compact" data-action="open-detail" data-act="${act.id}" role="button" tabindex="0">
+        <div class="cc-row">
+          <span class="gc-name">${esc(act.name)}</span>
+          <span class="cc-right"><span class="gc-frac"><b>${fmt(latest)}</b> ${esc(act.unit)}${today != null ? ' · ✓ today' : ''}</span><span class="chev">›</span></span>
+        </div>
+      </section>`;
+    }
+    const total = dayValue(act, key) || 0;
+    const g = goalForDay(act, key);
+    const plan = planInfo(act, key);
+    const done = g != null && total >= g;
+    const pct = g != null ? Math.min(100, (total / g) * 100) : 0;
+    const rep = lastAmount(act) || (act.quick && act.quick[0]) || null;
+    const quicks = (act.quick || []).filter(q => q !== rep).slice(0, 2);
+    return `<section class="card compact" data-action="open-detail" data-act="${act.id}" role="button" tabindex="0">
+      <div class="cc-row">
+        <span class="gc-name">${esc(act.name)}</span>
+        <span class="cc-right"><span class="gc-frac"><b>${fmt(total)}</b>${g != null ? ' / ' + fmt(g) : ''} ${esc(act.unit)}</span><span class="chev">›</span></span>
+      </div>
+      ${g != null ? `<div class="bar slim"><span class="${done ? 'full' : ''}" style="width:${pct}%"></span></div>` : ''}
+      <div class="cc-row2">
+        ${done ? `<span class="donetag">✓ done${plan && plan.label ? ' — ' + esc(plan.label) : ''}</span>`
+          : `<span class="hint">${plan ? esc(plan.label) : (g != null ? fmt(g - total) + ' ' + esc(act.unit) + ' to go' : '')}</span>`}
+        <span class="cc-quicks">
+          ${rep ? `<button class="qbtn primary sm" data-action="log" data-act="${act.id}" data-amt="${rep}">+${fmt(rep)}</button>` : ''}
+          ${quicks.map(q => `<button class="qbtn sm" data-action="log" data-act="${act.id}" data-amt="${q}">+${fmt(q)}</button>`).join('')}
+        </span>
+      </div>
+    </section>`;
+  }
+
+  function renderToday() {
+    const sections = GROUPS.map(g => {
+      const acts = state.activities.filter(a => (a.group || 'calisthenics') === g);
+      if (!acts.length) return '';
+      return `<div class="eyebrow">${GROUP_LABEL[g]}</div>` + acts.map(compactCard).join('');
+    }).join('');
     view.innerHTML = `
-      ${memoryOnly ? `<div class="warnbanner">Storage is blocked in this browser — data won't survive a reload. Use Manage → Export to back up.</div>` : ''}
-      <div class="eyebrow">Today</div>
+      ${memoryOnly ? `<div class="warnbanner">Storage is blocked in this browser — data won't survive a reload. Use Settings → Export to back up.</div>` : ''}
+      ${sections || `<div class="empty">No activities yet — add one in Settings.</div>`}
+      ${dailyBanner()}
+    `;
+  }
+
+  function renderDetail(act) {
+    view.innerHTML = `
+      <button class="backbtn" data-action="back">‹ Today</button>
       ${goalCard(act)}
       ${dailyBanner()}
       <div class="eyebrow">Progress</div>
       ${progressBlock([act])}
+      <div class="eyebrow">History</div>
+      ${calendarBlock(act)}
     `;
+  }
+
+  function renderProgressTab() {
+    const acts = sortedActs();
+    if (!acts.length) { view.innerHTML = `<div class="empty">Add an activity in Settings to see progress.</div>`; return; }
+    view.innerHTML = `<div class="eyebrow">Progress</div>` + progressBlock(acts);
   }
 
   /* ---------- STANDARDS: twice-monthly test days (1st & 3rd Saturday) ---------- */
@@ -1161,16 +1317,7 @@
     `;
   }
 
-  function renderHealth() {
-    const acts = state.activities.filter(a => a.group === 'health');
-    view.innerHTML = `
-      ${memoryOnly ? `<div class="warnbanner">Storage is blocked in this browser — data won't survive a reload. Use Manage → Export to back up.</div>` : ''}
-      ${acts.length
-        ? `<div class="eyebrow">Today — Health</div>` + acts.map(goalCard).join('') + dailyBanner()
-          + `<div class="eyebrow">Progress</div>` + progressBlock(acts)
-        : `<div class="empty">Nothing in Health yet — add water, weight, or sleep in Manage.</div>`}
-    `;
-  }
+
 
   /* ---------- PROGRESS ---------- */
   const VB_W = 640, VB_H = 240, PADL = 38, PADR = 10, PADT = 16, PADB = 26;
@@ -1470,7 +1617,29 @@
   }
 
   /* ================= actions ================= */
+  function startRest(act) {
+    if (act.group !== 'calisthenics' && act.group !== 'abs') return;
+    const secsLeft = act.plan && act.plan.id === 'armstrong' ? 90 : 60;
+    restTimer = { actId: act.id, label: act.name, end: Date.now() + secsLeft * 1000 };
+    updateRestPill();
+  }
+  function updateRestPill() {
+    const pill = $('#restpill');
+    if (!restTimer) { pill.style.display = 'none'; return; }
+    const left = Math.ceil((restTimer.end - Date.now()) / 1000);
+    if (left <= 0) {
+      restTimer = null;
+      pill.style.display = 'none';
+      beep();
+      toast('Rest over — next set');
+      return;
+    }
+    pill.style.display = 'flex';
+    pill.innerHTML = `<span>REST <b>${secs(left)}</b> · ${esc(restTimer.label)}</span><button data-action="rest-skip">Skip</button>`;
+  }
+
   function logAmount(actId, amount, mins) {
+    primeAudio();
     const act = actById(actId);
     if (!act || !(amount > 0)) return;
     const entry = { id: uid(), actId, amount, ts: Date.now() };
@@ -1480,6 +1649,7 @@
       if (lo) entry.load = lo.lbs;
     }
     state.entries.push(entry);
+    startRest(act);
     save();
     if (act.kind === 'measure') {
       toast('Recorded ' + fmt(amount) + ' ' + act.unit);
@@ -1495,6 +1665,75 @@
       toast('Logged ' + fmt(amount) + ' ' + act.unit);
     }
     render();
+  }
+
+  /* backfill: log to a past date (noon local, ordered after that day's existing entries) */
+  function logAmountAt(actId, amount, mins, key) {
+    const act = actById(actId);
+    if (!act || !(amount > 0)) return;
+    const existing = entriesFor(actId, key);
+    const base = keyToDate(key).getTime() + 12 * 3600000;
+    const ts = existing.length ? Math.max(...existing.map(e => e.ts)) + 60000 : base;
+    const entry = { id: uid(), actId, amount, ts: Math.min(ts, Date.now()) };
+    if (mins > 0) entry.mins = mins;
+    state.entries.push(entry);
+    state.entries.sort((a, b) => a.ts - b.ts);
+    save();
+    toast('Added to ' + keyToDate(key).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }));
+    render();
+  }
+
+  /* ---- per-exercise month calendar with day inspection + backfill ---- */
+  function calendarBlock(act) {
+    const now = new Date();
+    const mOff = state.ui.calMonth || 0;
+    const first = new Date(now.getFullYear(), now.getMonth() + mOff, 1);
+    const monthLabel = first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    const startPad = (first.getDay() + 6) % 7;          // Monday-first grid
+    const daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+    const tKey = todayKey();
+    let cells = '';
+    for (let i = 0; i < startPad; i++) cells += `<span class="cal-cell pad"></span>`;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const key = dayKey(new Date(first.getFullYear(), first.getMonth(), d).getTime());
+      const future = key > tKey;
+      const v = future ? null : dayValue(act, key);
+      const hit = !future && goalHit(act, key) === true;
+      const partial = !hit && v != null && v > 0;
+      const selected = state.ui.calSel === key;
+      cells += `<button class="cal-cell${hit ? ' hit' : ''}${partial ? ' part' : ''}${selected ? ' sel' : ''}${key === tKey ? ' today' : ''}"
+        ${future ? 'disabled' : `data-action="pick-day" data-key="${key}"`}>${d}</button>`;
+    }
+    let dayPanel = '';
+    if (state.ui.calSel) {
+      const key = state.ui.calSel;
+      const es = entriesFor(act.id, key);
+      const label = keyToDate(key).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      dayPanel = `<div class="cal-day">
+        <div class="cc-row"><span class="ct-strong">${esc(label)}</span>
+          <span class="gc-frac"><b>${fmt(dayValue(act, key))}</b> ${esc(act.unit)}</span></div>
+        ${es.length ? `<div class="setrow">` + es.map(e =>
+          `<span class="setchip"><b>${fmt(e.amount)}</b>${e.load ? ` <span class="loadtag">+${e.load}lb</span>` : ''} ${timeShort(e.ts)}
+            <button data-action="del-entry" data-id="${e.id}" aria-label="Delete entry">✕</button></span>`).join('') + `</div>`
+          : `<div class="hint">Nothing logged this day.</div>`}
+        <form class="qform" data-action="calform" data-act="${act.id}" data-key="${key}" style="margin-top:10px">
+          <input data-f="amt" type="number" inputmode="decimal" step="any" min="0" placeholder="${esc(act.unit)}" aria-label="Amount to add">
+          ${act.kind === 'distance' ? `<input data-f="mins" type="number" inputmode="decimal" step="any" min="0" placeholder="min" aria-label="Minutes (optional)">` : ''}
+          <button type="submit">Add</button>
+        </form>
+      </div>`;
+    }
+    return `<section class="card">
+      <div class="chart-title">
+        <span class="ct">${esc(monthLabel)}</span>
+        <span class="seg"><button data-action="cal-prev">‹</button><button data-action="cal-next" ${mOff >= 0 ? 'disabled' : ''}>›</button></span>
+      </div>
+      <div class="cal-grid">
+        ${['M','T','W','T','F','S','S'].map(w => `<span class="cal-wd">${w}</span>`).join('')}
+        ${cells}
+      </div>
+      ${dayPanel}
+    </section>`;
   }
 
   function deleteEntry(id) {
@@ -1563,6 +1802,22 @@
     const act = el.dataset.action;
 
     if (act === 'log') logAmount(el.dataset.act, parseFloat(el.dataset.amt));
+    else if (act === 'open-detail') { state.ui.detail = el.dataset.act; state.ui.calSel = null; state.ui.calMonth = 0; save(); render(true); }
+    else if (act === 'back') { state.ui.detail = null; save(); render(true); }
+    else if (act === 'hold-start') { primeAudio(); holdState = { actId: el.dataset.act, startTs: Date.now() }; render(); }
+    else if (act === 'hold-stop') {
+      if (holdState) {
+        const elapsed = Math.round((Date.now() - holdState.startTs) / 1000);
+        const id = holdState.actId;
+        holdState = null;
+        if (elapsed > 0) logAmount(id, elapsed); else render();
+      }
+    }
+    else if (act === 'hold-cancel') { holdState = null; render(); }
+    else if (act === 'rest-skip') { restTimer = null; updateRestPill(); }
+    else if (act === 'pick-day') { state.ui.calSel = state.ui.calSel === el.dataset.key ? null : el.dataset.key; save(); render(); }
+    else if (act === 'cal-prev') { state.ui.calMonth = (state.ui.calMonth || 0) - 1; state.ui.calSel = null; save(); render(); }
+    else if (act === 'cal-next') { state.ui.calMonth = Math.min(0, (state.ui.calMonth || 0) + 1); state.ui.calSel = null; save(); render(); }
     else if (act === 'del-entry') deleteEntry(el.dataset.id);
     else if (act === 'undo') {
       if (undoBuf) { state.entries.push(undoBuf); state.entries.sort((a,b) => a.ts - b.ts); undoBuf = null; save(); render(); }
@@ -1658,6 +1913,15 @@
       render();
       return;
     }
+    const cf = ev.target.closest('form[data-action="calform"]');
+    if (cf) {
+      ev.preventDefault();
+      const amt = parseFloat(cf.querySelector('[data-f="amt"]').value);
+      const minsInp = cf.querySelector('[data-f="mins"]');
+      const mins = minsInp ? parseFloat(minsInp.value) : NaN;
+      if (amt > 0) logAmountAt(cf.dataset.act, amt, mins > 0 ? mins : undefined, cf.dataset.key);
+      return;
+    }
     const f = ev.target.closest('form[data-action="logform"]');
     if (!f) return;
     ev.preventDefault();
@@ -1715,6 +1979,15 @@
   });
   setInterval(() => { if (todayKey() !== lastDay) { lastDay = todayKey(); render(); } }, 60000);
 
+  /* timer tick: hold-elapsed display + rest countdown */
+  setInterval(() => {
+    if (holdState) {
+      const el = document.getElementById('holdElapsed');
+      if (el) el.textContent = secs(Math.round((Date.now() - holdState.startTs) / 1000));
+    }
+    if (restTimer) updateRestPill();
+  }, 250);
+
   /* mouse users: vertical wheel scrolls the tab bar sideways */
   $('#tabbar').addEventListener('wheel', ev => {
     if (Math.abs(ev.deltaY) > Math.abs(ev.deltaX)) {
@@ -1722,6 +1995,11 @@
       ev.currentTarget.scrollLeft += ev.deltaY;
     }
   }, { passive: false });
+
+  /* offline support: install the service worker (github.io only — no-op elsewhere) */
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
 
   armstrongAutoProgress();
   render();
