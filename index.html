@@ -384,7 +384,7 @@
   'use strict';
 
   /* ================= storage ================= */
-  const APP_VERSION = '13';
+  const APP_VERSION = '14';
   const LS_KEY = 'fitlog.v1';
   let memoryOnly = false;
   const store = {
@@ -417,7 +417,7 @@
   function defaultState() {
     const mk = (name, kind, unit, goal, quick, group, plan) => ({ id: uid(), name, kind, unit, goal, quick, group, plan: plan ? { ...plan } : undefined, created: Date.now() });
     return {
-      v: 10,
+      v: 11,
       activities: [
         mk('Pushups',       'count',    'reps', null, [10, 20, 30],     'calisthenics', DEFAULT_PLANS.pushups),
         mk('Pull-ups',      'count',    'reps', null, [5, 10],          'calisthenics', DEFAULT_PLANS.pullups),
@@ -425,7 +425,7 @@
         mk('Plank',         'duration', 'sec',  null, [30, 60, 90],     'abs',          DEFAULT_PLANS.plank),
         mk('Run',           'distance', 'mi',   null, [1, 2, 3],        'cardio',       DEFAULT_PLANS.run),
         mk('Swim',          'distance', 'yd',   null, [250, 500, 1000], 'cardio',       DEFAULT_PLANS.swim),
-        mk('Water',         'count',    'oz',   100,  [17, 20],         'health'),
+        mk('Water',         'count',    'oz',   100,  [17, 26],         'health'),
         mk('Body Weight',   'measure',  'lb',   null, [],               'health')
       ],
       entries: [],   // {id, actId, amount, ts, mins?, load?}
@@ -503,6 +503,11 @@
       const water = s.activities.find(a => /water/i.test(a.name));
       if (water) water.quick = [17, 20];
       s.v = 8;
+    }
+    if (s.v < 11) {
+      const water = s.activities.find(a => /water/i.test(a.name));
+      if (water) water.quick = [17, 26];
+      s.v = 11;
     }
     if (s.v < 9) {
       s.activities.forEach(a => { if (a.plan) delete a.plan.cap; });
