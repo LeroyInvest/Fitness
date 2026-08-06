@@ -386,6 +386,9 @@
   /* ================= storage ================= */
   const APP_VERSION = '16';
   const LS_KEY = 'fitlog.v1';
+
+  /* Firebase project config — public identifiers, secured by Firestore rules (auth-gated per-user docs) */
+  const FIREBASE_CONFIG = null; /* paste config here to enable Google-account sync */
   let memoryOnly = false;
   const store = {
     read() {
@@ -635,13 +638,13 @@
 
   let pushTimer = null, pushPending = false;
   function schedulePush() {
-    if (!syncCfg.get().token) return;
+    if (!syncCfg.get().token && !cloudActive()) return;
     pushPending = true;
     clearTimeout(pushTimer);
     pushTimer = setTimeout(pushSync, 1000);
   }
   function flushPush() {
-    if (!pushPending || !syncCfg.get().token) return;
+    if (!pushPending || (!syncCfg.get().token && !cloudActive())) return;
     clearTimeout(pushTimer);
     pushSync(true);
   }
@@ -655,6 +658,16 @@
     if (!syncErrorToasted) { syncErrorToasted = true; toast('⚠ Sync problem: ' + msg); }
   }
   async function pushSync(urgent) {
+    if (cloudActive()) {
+      try {
+        pushPending = false;
+        syncStatus.state = 'syncing'; updateSyncNote();
+        await fb.api.fsM.setDoc(userDocRef(), JSON.parse(syncPayload()));
+        syncStatus = { ...syncStatus, state: 'ok', last: Date.now(), error: null };
+        updateSyncNote();
+      } catch (e) { syncFail(e); }
+      return;
+    }
     if (!syncCfg.get().token) return;
     try {
       pushPending = false;
@@ -666,6 +679,23 @@
     } catch (e) { syncFail(e); }
   }
   async function pullSync(announce) {
+    if (cloudActive()) {
+      try {
+        syncStatus.state = 'syncing'; updateSyncNote();
+        const snap = await fb.api.fsM.getDoc(userDocRef());
+        const remote = snap.data();
+        if (remote && Array.isArray(remote.entries)) {
+          const before = state.entries.length + state.tests.length;
+          mergeRemote(remote);
+          save(); render();
+          const gained = state.entries.length + state.tests.length - before;
+          if (announce && gained > 0) toast('Synced — pulled ' + gained + ' new entr' + (gained === 1 ? 'y' : 'ies'));
+        }
+        syncStatus = { ...syncStatus, state: 'ok', last: Date.now(), lastPull: Date.now(), error: null };
+        updateSyncNote();
+      } catch (e) { syncFail(e); }
+      return;
+    }
     if (!syncCfg.get().token) return;
     try {
       syncStatus.state = 'syncing'; updateSyncNote();
@@ -685,12 +715,89 @@
     } catch (e) { syncFail(e); }
   }
   function syncLabel() {
+    if (FIREBASE_CONFIG) {
+      if (!fb.ready) return fb.error || 'Loading cloud sync…';
+      if (!fb.user) return 'Not signed in';
+      if (syncStatus.state === 'syncing') return 'Syncing…';
+      if (syncStatus.state === 'error') return syncStatus.error;
+      return syncStatus.last ? 'Synced · last ' + timeShort(syncStatus.last) : 'Connected';
+    }
     if (!syncCfg.get().token) return 'Not connected';
     if (syncStatus.state === 'syncing') return 'Syncing…';
     if (syncStatus.state === 'error') return syncStatus.error;
     return syncStatus.last ? 'Synced · last ' + timeShort(syncStatus.last) : 'Connected';
   }
+  /* ---- Firebase (Google-account) sync: preferred when configured ---- */
+  let fb = { ready: false, user: null, api: null, unsub: null, error: null };
+  const cloudActive = () => fb.ready && !!fb.user;
+
+  async function initFirebase() {
+    if (!FIREBASE_CONFIG) return;
+    try {
+      const [appM, authM, fsM] = await Promise.all([
+        import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js'),
+        import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js'),
+        import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js')
+      ]);
+      const app = appM.initializeApp(FIREBASE_CONFIG);
+      const auth = authM.getAuth(app);
+      const db = fsM.getFirestore(app);
+      fb.api = { authM, fsM, auth, db };
+      fb.ready = true;
+      try { await authM.getRedirectResult(auth); } catch (e) { /* no pending redirect */ }
+      authM.onAuthStateChanged(auth, user => {
+        fb.user = user || null;
+        if (fb.unsub) { fb.unsub(); fb.unsub = null; }
+        if (user) startCloudListener(user);
+        updateSyncNote(); render();
+      });
+    } catch (e) { fb.error = 'Cloud sync failed to load (offline?)'; }
+  }
+
+  function userDocRef() {
+    const { fsM, db } = fb.api;
+    return fsM.doc(db, 'users', fb.user.uid);
+  }
+
+  function startCloudListener(user) {
+    const { fsM } = fb.api;
+    fb.unsub = fsM.onSnapshot(userDocRef(), snap => {
+      if (snap.metadata.hasPendingWrites) return;       // our own write echoing back
+      const remote = snap.data();
+      if (remote && Array.isArray(remote.entries)) {
+        const before = state.entries.length + state.tests.length;
+        mergeRemote(remote);
+        save(); render();
+        const gained = state.entries.length + state.tests.length - before;
+        if (gained > 0) toast('Synced — pulled ' + gained + ' new entr' + (gained === 1 ? 'y' : 'ies'));
+      } else {
+        pushSync();                                      // first device: seed the cloud doc
+      }
+      syncStatus = { ...syncStatus, state: 'ok', last: Date.now(), lastPull: Date.now(), error: null };
+      updateSyncNote();
+    }, e => syncFail(e));
+  }
+
+  async function fbSignIn() {
+    if (!fb.ready) { toast('Cloud sync not loaded — check your connection'); return; }
+    const { authM, auth } = fb.api;
+    const provider = new authM.GoogleAuthProvider();
+    try {
+      await authM.signInWithPopup(auth, provider);
+    } catch (e) {
+      try { await authM.signInWithRedirect(auth, provider); }
+      catch (e2) { toast('Sign-in failed: ' + (e2 && e2.code || 'unknown')); }
+    }
+  }
+  async function fbSignOut() {
+    if (fb.ready) await fb.api.authM.signOut(fb.api.auth).catch(() => {});
+  }
+
   function syncBadge() {
+    if (FIREBASE_CONFIG) {
+      if (cloudActive()) return syncStatus.state === 'error' ? ' · ⚠ sync' : ' · ✓ sync';
+      return ' · ⚠ not synced';
+    }
     if (!syncCfg.get().token) return ' · ⚠ not synced';
     return syncStatus.state === 'error' ? ' · ⚠ sync' : ' · ✓ sync';
   }
@@ -1204,9 +1311,9 @@
     }).join('');
     view.innerHTML = `
       ${memoryOnly ? `<div class="warnbanner">Storage is blocked in this browser — data won't survive a reload. Use Settings → Export to back up.</div>` : ''}
-      ${!syncCfg.get().token ? (!state.entries.length
-        ? `<div class="warnbanner"><strong>Not synced.</strong> Had sync before? Open your setup link or paste your token in Settings → GitHub sync and your whole log restores itself.</div>`
-        : `<div class="warnbanner"><strong>Not synced</strong> — entries live only on this device and are lost if the app is removed. Connect in Settings → GitHub sync.</div>`) : ''}
+      ${(FIREBASE_CONFIG ? !cloudActive() : !syncCfg.get().token) ? (!state.entries.length
+        ? `<div class="warnbanner"><strong>Not synced.</strong> ${FIREBASE_CONFIG ? 'Sign in with Google in Settings and your whole log restores itself.' : 'Had sync before? Open your setup link or paste your token in Settings → GitHub sync and your whole log restores itself.'}</div>`
+        : `<div class="warnbanner"><strong>Not synced</strong> — entries live only on this device and are lost if the app is removed. ${FIREBASE_CONFIG ? 'Sign in with Google in Settings.' : 'Connect in Settings → GitHub sync.'}</div>`) : ''}
       ${sections || `<div class="empty">No activities yet — add one in Settings.</div>`}
       ${dailyBanner()}
     `;
@@ -1614,7 +1721,18 @@
         <div class="mactions"><button class="btn primary" data-action="add-act">Add activity</button></div>
       </section>
       <div class="eyebrow">Sync across devices</div>
-      <section class="card">
+      ${FIREBASE_CONFIG ? `<section class="card">
+        <div class="gc-head"><span class="mname">Google sync</span><span class="mkind" id="syncStatus">${syncLabel()}</span></div>
+        ${fb.user ? `
+          <div class="note" style="margin-top:8px">Signed in as <b>${esc(fb.user.email || fb.user.displayName || 'your Google account')}</b>. Every log syncs live to your private cloud space — sign in on any device and the same log is there.</div>
+          <div class="mactions">
+            <button class="btn primary" data-action="sync-now">Sync now</button>
+            <button class="btn danger" data-action="fb-signout">Sign out…</button>
+          </div>`
+        : `
+          <div class="note" style="margin-top:8px">Sign in once with your Google account — your log syncs automatically on every device you sign in on. No tokens, no setup links.</div>
+          <div class="mactions"><button class="btn primary" data-action="fb-signin">Sign in with Google</button></div>`}
+      </section>` : `<section class="card">
         <div class="gc-head"><span class="mname">GitHub sync</span><span class="mkind" id="syncStatus">${syncLabel()}</span></div>
         ${syncCfg.get().token ? `
           <div class="mactions">
@@ -1628,7 +1746,7 @@
             <input id="sync-token" type="password" placeholder="ghp_…" autocomplete="off"></div>
           <div class="mactions"><button class="btn primary" data-action="sync-on">Connect</button></div>
           <div class="note">One-time setup: github.com/settings/tokens → “Generate new token (classic)” → name it, tick ONLY the “gist” box → Generate. Paste the same token here on every device you use. Your log then syncs through a secret Gist on your own GitHub account — no other server involved.</div>`}
-      </section>
+      </section>`}
       <div class="eyebrow">Your data</div>
       <section class="card">
         <div class="datarow">
@@ -1908,6 +2026,10 @@
       });
     }
     else if (act === 'sync-now') { pullSync(true).then(() => pushSync()); }
+    else if (act === 'fb-signin') { primeAudio(); fbSignIn(); }
+    else if (act === 'fb-signout') {
+      arm(el, 'Really sign out?', () => { fbSignOut(); toast('Signed out — data stays on this device'); });
+    }
     else if (act === 'sync-copylink') {
       const link = location.origin + location.pathname + '#st=' + (syncCfg.get().token || '');
       (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject()).then(
@@ -2008,7 +2130,7 @@
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { flushPush(); return; }   // going background: force-push anything pending
     if (todayKey() !== lastDay) { lastDay = todayKey(); render(); }
-    if (syncCfg.get().token && Date.now() - syncStatus.lastPull > 60000) pullSync(false);
+    if ((syncCfg.get().token || cloudActive()) && Date.now() - syncStatus.lastPull > 60000) pullSync(false);
   });
   window.addEventListener('pagehide', flushPush);
   setInterval(() => { if (todayKey() !== lastDay) { lastDay = todayKey(); render(); } }, 60000);
@@ -2045,6 +2167,7 @@
   }
 
   armstrongAutoProgress();
+  initFirebase();
   render();
   pullSync(true);
 })();
