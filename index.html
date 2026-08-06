@@ -384,11 +384,18 @@
   'use strict';
 
   /* ================= storage ================= */
-  const APP_VERSION = '16';
+  const APP_VERSION = '17';
   const LS_KEY = 'fitlog.v1';
 
   /* Firebase project config — public identifiers, secured by Firestore rules (auth-gated per-user docs) */
-  const FIREBASE_CONFIG = null; /* paste config here to enable Google-account sync */
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyCkzCAtWTBS_IU6FVeeFmylF8rRXNBgLn0",
+    authDomain: "training-log-ba4e2.firebaseapp.com",
+    projectId: "training-log-ba4e2",
+    storageBucket: "training-log-ba4e2.firebasestorage.app",
+    messagingSenderId: "283478225786",
+    appId: "1:283478225786:web:29181ffaa518eff9061cc3"
+  };
   let memoryOnly = false;
   const store = {
     read() {
@@ -735,9 +742,9 @@
     if (!FIREBASE_CONFIG) return;
     try {
       const [appM, authM, fsM] = await Promise.all([
-        import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js'),
-        import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js'),
-        import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js')
+        import('https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js'),
+        import('https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js'),
+        import('https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js')
       ]);
       const app = appM.initializeApp(FIREBASE_CONFIG);
       const auth = authM.getAuth(app);
