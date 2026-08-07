@@ -148,10 +148,11 @@
   .banner.testday { background: var(--accent2-soft); }
   .stdform { margin-top: 10px; }
   .qbtn {
-    border: 1px solid var(--hairline); background: var(--surface-3); color: var(--ink);
+    border: 1px solid var(--accent); background: var(--accent); color: #fff;
     font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums;
     padding: 13px 18px; border-radius: 12px; cursor: pointer; min-width: 66px;
   }
+  .qbtn:active { background: var(--accent-deep); border-color: var(--accent-deep); }
   .qbtn:active { transform: scale(.97); }
   .qform { display: flex; gap: 8px; flex: 1 1 150px; min-width: 150px; }
   .qform input {
@@ -384,7 +385,7 @@
   'use strict';
 
   /* ================= storage ================= */
-  const APP_VERSION = '17';
+  const APP_VERSION = '18';
   const LS_KEY = 'fitlog.v1';
 
   /* Firebase project config — public identifiers, secured by Firestore rules (auth-gated per-user docs) */
@@ -1160,10 +1161,7 @@
   }
 
   function quickRow(act, isMeasure) {
-    const rep = act.kind === 'distance' ? null : lastAmount(act);
-    const repBtn = rep && !isMeasure
-      ? `<button class="qbtn primary" data-action="log" data-act="${act.id}" data-amt="${rep}">+${fmt(rep)} again</button>` : '';
-    const btns = repBtn + (act.quick || []).filter(q => q !== rep).map(q =>
+    const btns = (act.quick || []).map(q =>
       `<button class="qbtn" data-action="log" data-act="${act.id}" data-amt="${q}">+${fmt(q)}</button>`).join('');
     if (act.kind === 'distance') {
       return `<div class="quickrow">${btns}
@@ -1291,8 +1289,7 @@
     const plan = planInfo(act, key);
     const done = g != null && total >= g;
     const pct = g != null ? Math.min(100, (total / g) * 100) : 0;
-    const rep = act.kind === 'distance' ? null : (lastAmount(act) || (act.quick && act.quick[0]) || null);
-    const quicks = act.kind === 'distance' ? [] : (act.quick || []).filter(q => q !== rep).slice(0, 2);
+    const quicks = act.kind === 'distance' ? [] : (act.quick || []).slice(0, 3);
     return `<section class="card compact" data-action="open-detail" data-act="${act.id}" role="button" tabindex="0">
       <div class="cc-row">
         <span class="gc-name">${esc(act.name)}</span>
@@ -1303,7 +1300,6 @@
         ${done ? `<span class="donetag">✓ done${plan && plan.label ? ' — ' + esc(plan.label) : ''}</span>`
           : `<span class="hint">${plan ? esc(plan.label) : (g != null ? fmt(g - total) + ' ' + esc(act.unit) + ' to go' : '')}</span>`}
         <span class="cc-quicks">
-          ${rep ? `<button class="qbtn primary sm" data-action="log" data-act="${act.id}" data-amt="${rep}">+${fmt(rep)}</button>` : ''}
           ${quicks.map(q => `<button class="qbtn sm" data-action="log" data-act="${act.id}" data-amt="${q}">+${fmt(q)}</button>`).join('')}
         </span>
       </div>
