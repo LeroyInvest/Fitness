@@ -1,6 +1,6 @@
 /* Training Log service worker — offline cold-start + background updates */
 const CACHE = 'training-log-__BUILD__';
-const CORE = ['./', 'manifest.webmanifest', 'icons/icon-192-6.png', 'icons/icon-512-6.png', 'icons/apple-touch-icon-6.png'];
+const CORE = ['./', 'manifest.webmanifest', 'icons/icon-192-7.png', 'icons/icon-512-7.png', 'icons/apple-touch-icon-7.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
