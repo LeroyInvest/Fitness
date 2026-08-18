@@ -385,7 +385,7 @@
   'use strict';
 
   /* ================= storage ================= */
-  const APP_VERSION = '21';
+  const APP_VERSION = '22';
   const LS_KEY = 'fitlog.v1';
 
   /* Firebase project config — public identifiers, secured by Firestore rules (auth-gated per-user docs) */
@@ -425,8 +425,9 @@
     swim:     { id: 'swim' }
   };
 
+  const slugId = n => n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   function defaultState() {
-    const mk = (name, kind, unit, goal, quick, group, plan) => ({ id: uid(), name, kind, unit, goal, quick, group, plan: plan ? { ...plan } : undefined, created: Date.now() });
+    const mk = (name, kind, unit, goal, quick, group, plan) => ({ id: slugId(name), name, kind, unit, goal, quick, group, plan: plan ? { ...plan } : undefined, created: Date.now() });
     return {
       v: 12,
       activities: [
@@ -520,6 +521,22 @@
       if (water) water.quick = [17, 26];
       s.v = 11;
     }
+    if (s.v < 13) {
+      const idMap = {}, seen = {};
+      s.activities.forEach(a => {
+        let ns = slugId(a.name) || a.id;
+        while (seen[ns]) ns += '-2';
+        seen[ns] = 1;
+        if (a.id !== ns) idMap[a.id] = ns;
+        a.id = ns;
+      });
+      (s.entries || []).forEach(e => { if (idMap[e.actId]) e.actId = idMap[e.actId]; });
+      if (s.ui) {
+        if (idMap[s.ui.progressAct]) s.ui.progressAct = idMap[s.ui.progressAct];
+        if (idMap[s.ui.detail]) s.ui.detail = idMap[s.ui.detail];
+      }
+      // v13 subsumes v12's quick-add values for fresh data; run v12 block as-is afterward
+    }
     if (s.v < 12) {
       const setQ = (re, q) => { const a = s.activities.find(x => re.test(x.name)); if (a) a.quick = q; };
       setQ(/push/i, [25, 30, 40]);
@@ -530,6 +547,7 @@
       setQ(/swim/i, []);
       s.v = 12;
     }
+    if (s.v < 13) s.v = 13;
     if (s.v < 9) {
       s.activities.forEach(a => { if (a.plan) delete a.plan.cap; });
       s.v = 9;
@@ -642,6 +660,57 @@
       state.savedAt = remote.savedAt;
     }
     state = migrate(state);
+    healOrphans();               // reattach any entries whose exercise ids no longer exist
+  }
+
+  function orphanGroups() {
+    const known = new Set(state.activities.map(a => a.id));
+    const groups = {};
+    state.entries.forEach(e => { if (!known.has(e.actId)) (groups[e.actId] = groups[e.actId] || []).push(e); });
+    return groups;
+  }
+  function healOrphans() {
+    const byName = {};
+    state.activities.forEach(a => { byName[a.name.toLowerCase()] = a.id; });
+    let fixed = 0;
+    Object.values(orphanGroups()).forEach(es => {
+      const carrier = es.find(e => e.n && byName[e.n.toLowerCase()]);
+      if (carrier) {
+        const target = byName[carrier.n.toLowerCase()];
+        es.forEach(e => { e.actId = target; });
+        fixed += es.length;
+      }
+    });
+    return fixed;
+  }
+  async function repairData() {
+    let fixed = healOrphans();
+    let groups = orphanGroups();
+    // second pass: old Gist knows the old ids' names
+    if (Object.keys(groups).length && syncCfg.get().token) {
+      try {
+        const id = await findOrCreateGist();
+        const g = await gistApi('/gists/' + id);
+        const f = g && g.files && g.files[GIST_FILE];
+        if (f) {
+          const old = JSON.parse(f.truncated ? await (await fetch(f.raw_url)).text() : f.content);
+          const oldName = {};
+          (old.activities || []).forEach(a => { oldName[a.id] = a.name; });
+          const byName = {};
+          state.activities.forEach(a => { byName[a.name.toLowerCase()] = a.id; });
+          Object.entries(groups).forEach(([oid, es]) => {
+            const nm = oldName[oid];
+            if (nm && byName[nm.toLowerCase()]) {
+              es.forEach(e => { e.actId = byName[nm.toLowerCase()]; });
+              fixed += es.length;
+            }
+          });
+        }
+      } catch (e) { /* gist unavailable — manual mapping below */ }
+    }
+    if (fixed) { save(); render(); }
+    const left = Object.values(orphanGroups()).reduce((t, es) => t + es.length, 0);
+    toast(fixed ? `Repaired ${fixed} entr${fixed === 1 ? 'y' : 'ies'}` + (left ? ` — ${left} need a manual pick below` : ' — all reattached') : (left ? left + ' orphaned entries need a manual pick below' : 'No orphaned entries — everything is attached'));
   }
 
   let pushTimer = null, pushPending = false;
@@ -1789,7 +1858,19 @@
       </section>`}
       <div class="eyebrow">Your data</div>
       <section class="card">
+        ${Object.keys(orphanGroups()).length ? `<div class="warnbanner" style="margin-bottom:10px"><strong>${Object.values(orphanGroups()).reduce((t, es) => t + es.length, 0)} orphaned entries found</strong> — they exist but aren't attached to an exercise. Tap Repair data; anything left gets a picker below.</div>` : ''}
+        ${Object.entries(orphanGroups()).map(([oid, es]) => {
+          const d1 = new Date(Math.min(...es.map(e => e.ts))), d2 = new Date(Math.max(...es.map(e => e.ts)));
+          const range = d1.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + '–' + d2.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          const sample = es.slice(0, 4).map(e => fmt(e.amount)).join(', ');
+          return `<div class="cal-day" data-orphan="${oid}">
+            <div class="cc-row"><span class="ct-strong">${es.length} entries · ${range}</span><span class="gc-frac">e.g. ${esc(sample)}</span></div>
+            <div class="mactions"><select data-f="target">${state.activities.map(a => `<option value="${a.id}">${esc(a.name)}</option>`).join('')}</select>
+            <button class="btn primary" data-action="orphan-apply" data-oid="${oid}">Attach</button></div>
+          </div>`;
+        }).join('')}
         <div class="datarow">
+          <button class="btn" data-action="repair">Repair data</button>
           <button class="btn" data-action="export">Export backup</button>
           <label class="btn" style="display:inline-flex;align-items:center;cursor:pointer">Import backup
             <input id="importFile" type="file" accept=".json,application/json" style="display:none"></label>
@@ -1826,7 +1907,7 @@
     primeAudio();
     const act = actById(actId);
     if (!act || !(amount > 0)) return;
-    const entry = { id: uid(), actId, amount, ts: Date.now() };
+    const entry = { id: uid(), actId, amount, ts: Date.now(), n: act.name };
     if (mins > 0) entry.mins = mins;
     if (loadToggle[actId]) {
       const lo = loadOpt(act);
@@ -1858,7 +1939,7 @@
     const existing = entriesFor(actId, key);
     const base = keyToDate(key).getTime() + 12 * 3600000;
     const ts = existing.length ? Math.max(...existing.map(e => e.ts)) + 60000 : base;
-    const entry = { id: uid(), actId, amount, ts: Math.min(ts, Date.now()) };
+    const entry = { id: uid(), actId, amount, ts: Math.min(ts, Date.now()), n: act.name };
     if (mins > 0) entry.mins = mins;
     state.entries.push(entry);
     state.entries.sort((a, b) => a.ts - b.ts);
@@ -2085,6 +2166,16 @@
         toast('Sync disconnected — data stays on this device');
         render();
       });
+    }
+    else if (act === 'repair') repairData();
+    else if (act === 'orphan-apply') {
+      const box = el.closest('[data-orphan]');
+      const target = box && box.querySelector('[data-f="target"]').value;
+      if (target) {
+        const oid = el.dataset.oid;
+        state.entries.forEach(e => { if (e.actId === oid) e.actId = target; });
+        save(); toast('Entries attached'); render();
+      }
     }
     else if (act === 'export') exportBackup();
     else if (act === 'reset') {
