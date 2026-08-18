@@ -385,7 +385,7 @@
   'use strict';
 
   /* ================= storage ================= */
-  const APP_VERSION = '19';
+  const APP_VERSION = '20';
   const LS_KEY = 'fitlog.v1';
 
   /* Firebase project config — public identifiers, secured by Firestore rules (auth-gated per-user docs) */
@@ -784,6 +784,30 @@
       syncStatus = { ...syncStatus, state: 'ok', last: Date.now(), lastPull: Date.now(), error: null };
       updateSyncNote();
     }, e => syncFail(e));
+  }
+
+  async function fbTest() {
+    const out = document.getElementById('syncDiag');
+    const say = t => { if (out) out.textContent = t; };
+    if (!cloudActive()) { say('Not signed in — sign in first.'); return; }
+    const { fsM } = fb.api;
+    try {
+      say('Testing… (1/3 write)');
+      const stamp = Date.now();
+      await fsM.setDoc(userDocRef(), { diag: stamp }, { merge: true });
+      say('Testing… (2/3 full push)');
+      await pushSync();
+      say('Testing… (3/3 read back)');
+      const snap = await fsM.getDoc(userDocRef());
+      const d = snap.data() || {};
+      const cloudN = Array.isArray(d.entries) ? d.entries.length : 0;
+      const ok = d.diag === stamp;
+      say(`${ok ? '✓ round-trip OK' : '✗ read-back mismatch'} · account ${fb.user.email || '?'} · user-id ${fb.user.uid.slice(0, 10)}… · cloud holds ${cloudN} entries / this device ${state.entries.length}`);
+      toast(ok ? '✓ Cloud sync verified — ' + cloudN + ' entries in the cloud' : '✗ Cloud read-back failed');
+    } catch (e) {
+      say('✗ FAILED: ' + (e && e.code || e && e.message || 'unknown') + ' — this is why data isn\'t arriving.');
+      toast('✗ Cloud test failed: ' + (e && e.code || 'unknown'));
+    }
   }
 
   async function fbSignIn() {
@@ -1730,8 +1754,10 @@
           <div class="note" style="margin-top:8px">Signed in as <b>${esc(fb.user.email || fb.user.displayName || 'your Google account')}</b>. Every log syncs live to your private cloud space — sign in on any device and the same log is there.</div>
           <div class="mactions">
             <button class="btn primary" data-action="sync-now">Sync now</button>
+            <button class="btn" data-action="fb-test">Test cloud sync</button>
             <button class="btn danger" data-action="fb-signout">Sign out…</button>
-          </div>`
+          </div>
+          <div class="note" id="syncDiag">Run “Test cloud sync” to verify data is reaching the cloud.</div>`
         : `
           <div class="note" style="margin-top:8px">Sign in once with your Google account — your log syncs automatically on every device you sign in on. No tokens, no setup links.</div>
           <div class="mactions"><button class="btn primary" data-action="fb-signin">Sign in with Google</button></div>`}
@@ -2030,6 +2056,7 @@
     }
     else if (act === 'sync-now') { pullSync(true).then(() => pushSync()); }
     else if (act === 'fb-signin') { primeAudio(); fbSignIn(); }
+    else if (act === 'fb-test') { fbTest(); }
     else if (act === 'fb-signout') {
       arm(el, 'Really sign out?', () => { fbSignOut(); toast('Signed out — data stays on this device'); });
     }
