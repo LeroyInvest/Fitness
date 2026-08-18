@@ -385,7 +385,7 @@
   'use strict';
 
   /* ================= storage ================= */
-  const APP_VERSION = '22';
+  const APP_VERSION = '23';
   const LS_KEY = 'fitlog.v1';
 
   /* Firebase project config — public identifiers, secured by Firestore rules (auth-gated per-user docs) */
@@ -713,6 +713,7 @@
     toast(fixed ? `Repaired ${fixed} entr${fixed === 1 ? 'y' : 'ies'}` + (left ? ` — ${left} need a manual pick below` : ' — all reattached') : (left ? left + ' orphaned entries need a manual pick below' : 'No orphaned entries — everything is attached'));
   }
 
+  let gistMerged = false;   // like cloudMerged: never overwrite the gist before folding it in
   let pushTimer = null, pushPending = false;
   function schedulePush() {
     if (!syncCfg.get().token && !cloudActive()) return;
@@ -757,6 +758,18 @@
       pushPending = false;
       syncStatus.state = 'syncing'; updateSyncNote();
       const id = await findOrCreateGist();
+      if (!gistMerged) {                                  // fold the gist in before writing over it
+        try {
+          const g0 = await gistApi('/gists/' + id);
+          const f0 = g0 && g0.files && g0.files[GIST_FILE];
+          if (f0) {
+            const prev = JSON.parse(f0.truncated ? await (await fetch(f0.raw_url)).text() : f0.content);
+            if (prev && Array.isArray(prev.entries)) mergeRemote(prev);
+          }
+        } catch (e0) { /* unreadable — proceed */ }
+        gistMerged = true;
+        store.write(state);
+      }
       await gistApi('/gists/' + id, { method: 'PATCH', keepalive: !!urgent, body: JSON.stringify({ files: { [GIST_FILE]: { content: syncPayload() } } }) });
       syncStatus = { ...syncStatus, state: 'ok', last: Date.now(), error: null };
       updateSyncNote();
@@ -795,6 +808,7 @@
         const gained = state.entries.length + state.tests.length - before;
         if (announce && gained > 0) toast('Synced — pulled ' + gained + ' new entr' + (gained === 1 ? 'y' : 'ies'));
       }
+      gistMerged = true;
       syncStatus = { ...syncStatus, state: 'ok', last: Date.now(), lastPull: Date.now(), error: null };
       updateSyncNote();
     } catch (e) { syncFail(e); }
@@ -1201,6 +1215,8 @@
   }
 
   function render(scrollTop) {
+    const chipsEl = view.querySelector('.chips');
+    const chipsScroll = chipsEl ? chipsEl.scrollLeft : null;
     const tab = resolveTab();
     renderNav(tab);
     $('#topDate').textContent = dateLong() + syncBadge();
@@ -1212,6 +1228,10 @@
       if (detail) renderDetail(detail); else renderToday();
     }
     if (scrollTop) window.scrollTo(0, 0);   // only on tab switches — in-place updates keep your spot
+    if (chipsScroll != null && !scrollTop) {
+      const nc = view.querySelector('.chips');
+      if (nc) nc.scrollLeft = chipsScroll;
+    }
   }
 
   /* ---------- TODAY ---------- */
@@ -1754,10 +1774,11 @@
       <button class="${range === 'month' ? 'sel' : ''}" data-action="set-range" data-range="month">Month</button>
     </span>`;
 
-    const recent = state.entries.filter(e => e.actId === sel.id).sort((a,b) => b.ts - a.ts).slice(0, 15);
+    const dayk = state.ui.calSel || todayKey();
+    const dayLabel = dayk === todayKey() ? 'Today' : keyToDate(dayk).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    const recent = state.entries.filter(e => e.actId === sel.id && dayKey(e.ts) === dayk).sort((a,b) => b.ts - a.ts);
     const logRows = recent.map(e => {
-      const d = new Date(e.ts);
-      const when = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' · ' + timeShort(e.ts);
+      const when = timeShort(e.ts);
       const pace = sel.kind === 'distance' && e.mins > 0 ? ' · ' + mmss(e.mins) + ' min · ' + paceStr(sel, e.amount, e.mins) : '';
       const load = e.load ? ` · <span class="loadtag">+${e.load} lb</span>` : '';
       return `<tr><td class="amt">${fmt(e.amount)} ${esc(sel.unit)}${pace}${load}</td><td class="when">${when}</td>
@@ -1776,8 +1797,8 @@
         <div class="chartwrap">${paceChart}</div>
       </section>` : ''}
       <section class="card">
-        <div class="chart-title"><span class="ct">Recent entries</span></div>
-        ${recent.length ? `<table class="log"><tbody>${logRows}</tbody></table>` : `<div class="empty">Nothing logged yet.</div>`}
+        <div class="chart-title"><span class="ct">Entries — ${esc(dayLabel)}</span></div>
+        ${recent.length ? `<table class="log"><tbody>${logRows}</tbody></table>` : `<div class="empty">Nothing logged ${dayk === todayKey() ? 'today yet' : 'this day'}. ${dayk === todayKey() ? '' : 'Use the calendar below to add entries.'}</div>`}
       </section>
     `;
   }
@@ -1807,26 +1828,6 @@
       </section>`).join('');
 
     view.innerHTML = `
-      <div class="eyebrow">Activities & goals</div>
-      ${rows}
-      <div class="eyebrow">Add an activity</div>
-      <section class="card">
-        <div class="mgrid">
-          <div class="field"><label>Name</label><input id="na-name" placeholder="e.g. Dips"></div>
-          <div class="field"><label>Type</label>
-            <select id="na-kind">
-              <option value="count">Reps (counts add up daily)</option>
-              <option value="distance">Distance (adds up daily)</option>
-              <option value="duration">Time (adds up daily)</option>
-              <option value="measure">Measurement (latest value, e.g. weight)</option>
-            </select></div>
-          <div class="field"><label>Unit</label><input id="na-unit" placeholder="reps, mi, sec, lb…"></div>
-          <div class="field"><label>Daily goal / target (optional)</label><input id="na-goal" type="number" inputmode="decimal" step="any" min="0" placeholder="none"></div>
-          <div class="field"><label>Section</label>
-            <select id="na-group">${GROUPS.map(g => `<option value="${g}">${GROUP_LABEL[g]}</option>`).join('')}</select></div>
-        </div>
-        <div class="mactions"><button class="btn primary" data-action="add-act">Add activity</button></div>
-      </section>
       <div class="eyebrow">Sync across devices</div>
       ${FIREBASE_CONFIG ? `<section class="card">
         <div class="gc-head"><span class="mname">Google sync</span><span class="mkind" id="syncStatus">${syncLabel()}</span></div>
@@ -1877,6 +1878,26 @@
           <button class="btn danger" data-action="reset">Erase everything…</button>
         </div>
         <div class="note">Data is saved on this device two ways (browser storage + a mirror), ${state.entries.length} entries stored. Still worth exporting a JSON backup now and then — it restores everything via Import. · Training Log build ${APP_VERSION}</div>
+      </section>
+      <div class="eyebrow">Activities & goals</div>
+      ${rows}
+      <div class="eyebrow">Add an activity</div>
+      <section class="card">
+        <div class="mgrid">
+          <div class="field"><label>Name</label><input id="na-name" placeholder="e.g. Dips"></div>
+          <div class="field"><label>Type</label>
+            <select id="na-kind">
+              <option value="count">Reps (counts add up daily)</option>
+              <option value="distance">Distance (adds up daily)</option>
+              <option value="duration">Time (adds up daily)</option>
+              <option value="measure">Measurement (latest value, e.g. weight)</option>
+            </select></div>
+          <div class="field"><label>Unit</label><input id="na-unit" placeholder="reps, mi, sec, lb…"></div>
+          <div class="field"><label>Daily goal / target (optional)</label><input id="na-goal" type="number" inputmode="decimal" step="any" min="0" placeholder="none"></div>
+          <div class="field"><label>Section</label>
+            <select id="na-group">${GROUPS.map(g => `<option value="${g}">${GROUP_LABEL[g]}</option>`).join('')}</select></div>
+        </div>
+        <div class="mactions"><button class="btn primary" data-action="add-act">Add activity</button></div>
       </section>
     `;
   }
