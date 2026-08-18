@@ -135,6 +135,8 @@
   }
   .quickrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
   .loadrow { margin-top: 8px; }
+  .pyramid { display: flex; flex-direction: column; align-items: center; gap: 7px; margin-top: 8px; }
+  .prow { display: flex; gap: 7px; justify-content: center; }
   .loadbtn {
     border: 1px dashed var(--hairline); background: transparent; color: var(--ink-2);
     font-weight: 600; font-size: 13px; padding: 7px 12px; border-radius: 999px; cursor: pointer;
@@ -385,7 +387,7 @@
   'use strict';
 
   /* ================= storage ================= */
-  const APP_VERSION = '23';
+  const APP_VERSION = '24';
   const LS_KEY = 'fitlog.v1';
 
   /* Firebase project config — public identifiers, secured by Firestore rules (auth-gated per-user docs) */
@@ -1285,7 +1287,24 @@
   }
 
   function quickRow(act, isMeasure) {
-    const btns = (act.quick || []).map(q =>
+    let quicks = act.quick || [];
+    let pyramidHtml = '';
+    if (act.plan && act.plan.id === 'armstrong') {
+      const dow = new Date().getDay();
+      const ws = act.plan.ws || 5;
+      if (dow === 2) {                      // pyramid day: buttons shaped like the ladder itself
+        const rows = [[1], [2, 3], [4, 5, 6], [7, 8, 9, 10]];
+        pyramidHtml = `<div class="pyramid">` + rows.map(r =>
+          `<div class="prow">` + r.map(n =>
+            `<button class="qbtn sm" data-action="log" data-act="${act.id}" data-amt="${n}">+${n}</button>`).join('') + `</div>`).join('') + `</div>`;
+        quicks = [];
+      } else if (dow === 3 || dow === 4) {  // training-set days: sets are exactly the working set
+        quicks = [ws];
+      } else if (dow === 5) {               // repeat hardest: working set plus the usual spread
+        quicks = [...new Set([ws, ...quicks])];
+      }
+    }
+    const btns = (quicks || []).map(q =>
       `<button class="qbtn" data-action="log" data-act="${act.id}" data-amt="${q}">+${fmt(q)}</button>`).join('');
     if (act.kind === 'distance') {
       return `<div class="quickrow">${btns}
@@ -1296,7 +1315,7 @@
         </form></div>
         ${loadBtn(act) ? `<div class="loadrow">${loadBtn(act)}</div>` : ''}`;
     }
-    return `${act.kind === 'duration' ? holdUI(act) : ''}
+    return `${act.kind === 'duration' ? holdUI(act) : ''}${pyramidHtml}
       <div class="quickrow">${btns}
       <form class="qform" data-action="logform" data-act="${act.id}">
         <input type="number" inputmode="decimal" step="any" min="0" placeholder="${esc(act.unit)}" aria-label="Amount in ${esc(act.unit)} for ${esc(act.name)}">
