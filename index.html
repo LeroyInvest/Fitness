@@ -387,7 +387,7 @@
   'use strict';
 
   /* ================= storage ================= */
-  const APP_VERSION = '24';
+  const APP_VERSION = '25';
   const LS_KEY = 'fitlog.v1';
 
   /* Firebase project config — public identifiers, secured by Firestore rules (auth-gated per-user docs) */
@@ -1376,7 +1376,6 @@
       </div>
       <div class="logpanel">
         <div class="lp-label">Log ${act.kind === 'distance' ? 'workout' : 'set'}</div>
-        ${setChips(act)}
         ${quickRow(act, false)}
       </div>
       ${hasGoal ? `
@@ -1469,9 +1468,9 @@
     view.innerHTML = `
       <button class="backbtn" data-action="back">‹ Today</button>
       ${goalCard(act)}
-      ${dailyBanner()}
+      ${entriesBlock(act)}
       <div class="eyebrow">Progress</div>
-      ${progressBlock([act])}
+      ${progressBlock([act], false)}
       <div class="eyebrow">History</div>
       ${calendarBlock(act)}
     `;
@@ -1722,7 +1721,7 @@
     </svg>`;
   }
 
-  function progressBlock(acts) {
+  function progressBlock(acts, showEntries = true) {
     let sel = acts.find(a => a.id === state.ui.progressAct) || acts[0];
 
     const chips = acts.length > 1
@@ -1793,6 +1792,22 @@
       <button class="${range === 'month' ? 'sel' : ''}" data-action="set-range" data-range="month">Month</button>
     </span>`;
 
+    return `
+      ${chips}
+      ${tiles}
+      <section class="card">
+        <div class="chart-title"><span class="ct">Performance</span>${seg}</div>
+        <div class="chartwrap">${chart}</div>
+      </section>
+      ${paceChart ? `<section class="card">
+        <div class="chart-title"><span class="ct">Pace</span><span class="cs">min${esc(pu.lbl)}</span></div>
+        <div class="chartwrap">${paceChart}</div>
+      </section>` : ''}
+      ${showEntries ? entriesBlock(sel) : ''}
+    `;
+  }
+
+  function entriesBlock(sel) {
     const dayk = state.ui.calSel || todayKey();
     const dayLabel = dayk === todayKey() ? 'Today' : keyToDate(dayk).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
     const recent = state.entries.filter(e => e.actId === sel.id && dayKey(e.ts) === dayk).sort((a,b) => b.ts - a.ts);
@@ -1805,19 +1820,9 @@
     }).join('');
 
     return `
-      ${chips}
-      ${tiles}
-      <section class="card">
-        <div class="chart-title"><span class="ct">Performance</span>${seg}</div>
-        <div class="chartwrap">${chart}</div>
-      </section>
-      ${paceChart ? `<section class="card">
-        <div class="chart-title"><span class="ct">Pace</span><span class="cs">min${esc(pu.lbl)}</span></div>
-        <div class="chartwrap">${paceChart}</div>
-      </section>` : ''}
       <section class="card">
         <div class="chart-title"><span class="ct">Entries — ${esc(dayLabel)}</span></div>
-        ${recent.length ? `<table class="log"><tbody>${logRows}</tbody></table>` : `<div class="empty">Nothing logged ${dayk === todayKey() ? 'today yet' : 'this day'}. ${dayk === todayKey() ? '' : 'Use the calendar below to add entries.'}</div>`}
+        ${recent.length ? `<table class="log"><tbody>${logRows}</tbody></table>` : `<div class="empty">Nothing logged ${dayk === todayKey() ? 'today yet' : 'this day'}. ${dayk === todayKey() ? '' : 'Use the calendar to add entries.'}</div>`}
       </section>
     `;
   }
