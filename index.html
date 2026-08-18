@@ -387,7 +387,7 @@
   'use strict';
 
   /* ================= storage ================= */
-  const APP_VERSION = '25';
+  const APP_VERSION = '26';
   const LS_KEY = 'fitlog.v1';
 
   /* Firebase project config — public identifiers, secured by Firestore rules (auth-gated per-user docs) */
@@ -1247,16 +1247,20 @@
 
   /* weighted-work flags: 20 lb vest for calisthenics/abs, ~35 lb sandbag for runs */
   const loadToggle = {};
-  function loadOpt(act) {
-    if (act.kind === 'measure' || act.group === 'health') return null;
-    if (act.kind === 'distance') return /run/i.test(act.name) ? { lbs: 35, label: '+35 lb sandbag' } : null;
-    return { lbs: 20, label: '+20 lb vest' };
+  function loadOpts(act) {
+    if (act.kind === 'measure' || act.group === 'health' || /swim/i.test(act.name)) return [];
+    const opts = [{ lbs: 20, label: '+20 lb vest' }];
+    if (act.kind === 'distance') opts.push({ lbs: 35, label: '+35 lb sandbag' });
+    return opts;
   }
   function loadBtn(act) {
-    const lo = loadOpt(act);
-    if (!lo) return '';
-    return `<button class="loadbtn ${loadToggle[act.id] ? 'on' : ''}" data-action="toggle-load" data-act="${act.id}"
-      aria-pressed="${!!loadToggle[act.id]}">${loadToggle[act.id] ? '✓ ' : ''}${lo.label}</button>`;
+    const opts = loadOpts(act);
+    if (!opts.length) return '';
+    return opts.map(lo => {
+      const on = loadToggle[act.id] === lo.lbs;
+      return `<button class="loadbtn ${on ? 'on' : ''}" data-action="toggle-load" data-act="${act.id}" data-lbs="${lo.lbs}"
+        aria-pressed="${on}">${on ? '✓ ' : ''}${lo.label}</button>`;
+    }).join(' ');
   }
 
   /* hold timer (duration exercises) + rest countdown state */
@@ -1954,10 +1958,7 @@
     if (!act || !(amount > 0)) return;
     const entry = { id: uid(), actId, amount, ts: Date.now(), n: act.name };
     if (mins > 0) entry.mins = mins;
-    if (loadToggle[actId]) {
-      const lo = loadOpt(act);
-      if (lo) entry.load = lo.lbs;
-    }
+    if (loadToggle[actId]) entry.load = loadToggle[actId];
     state.entries.push(entry);
     startRest(act);
     save();
@@ -2135,7 +2136,11 @@
     }
     else if (act === 'pick-act') { state.ui.progressAct = el.dataset.act; save(); render(); }
     else if (act === 'set-range') { state.ui.range = el.dataset.range; save(); render(); }
-    else if (act === 'toggle-load') { loadToggle[el.dataset.act] = !loadToggle[el.dataset.act]; render(); }
+    else if (act === 'toggle-load') {
+      const lbs = parseInt(el.dataset.lbs, 10);
+      loadToggle[el.dataset.act] = loadToggle[el.dataset.act] === lbs ? null : lbs;
+      render();
+    }
     else if (act === 'pick-std') { state.ui.stdSel = el.dataset.key; save(); render(); }
     else if (act === 'del-test') {
       state.tests = state.tests.filter(t => t.id !== el.dataset.id);
