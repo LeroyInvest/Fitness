@@ -387,7 +387,7 @@
   'use strict';
 
   /* ================= storage ================= */
-  const APP_VERSION = '40';
+  const APP_VERSION = '41';
   const LS_KEY = 'fitlog.v1';
 
   /* Firebase project config — public identifiers, secured by Firestore rules (auth-gated per-user docs) */
@@ -429,13 +429,13 @@
 
   const slugId = n => n.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
   function defaultState() {
-    const mk = (name, kind, unit, goal, quick, group, plan) => ({ id: slugId(name), name, kind, unit, goal, quick, group, plan: plan ? { ...plan } : undefined, created: Date.now() });
+    const mk = (name, kind, unit, goal, quick, group, plan, quick2) => ({ id: slugId(name), name, kind, unit, goal, quick, quick2, group, plan: plan ? { ...plan } : undefined, created: Date.now() });
     return {
-      v: 12,
+      v: 14,
       activities: [
-        mk('Pushups',       'count',    'reps', null, [25, 30, 40],     'calisthenics', DEFAULT_PLANS.pushups),
+        mk('Pushups',       'count',    'reps', null, [25, 30, 40],     'calisthenics', DEFAULT_PLANS.pushups, [20]),
         mk('Pull-ups',      'count',    'reps', null, [5, 8, 10],       'calisthenics', DEFAULT_PLANS.pullups),
-        mk('Sit-ups',       'count',    'reps', null, [25, 30, 50],     'abs',          DEFAULT_PLANS.situps),
+        mk('Sit-ups',       'count',    'reps', null, [25, 30, 50],     'abs',          DEFAULT_PLANS.situps, [20]),
         mk('Plank',         'duration', 'sec',  null, [60, 90, 120],    'abs',          DEFAULT_PLANS.plank),
         mk('Run',           'distance', 'mi',   null, [],               'cardio',       DEFAULT_PLANS.run),
         mk('Swim',          'distance', 'yd',   null, [],               'cardio',       DEFAULT_PLANS.swim),
@@ -550,6 +550,12 @@
       s.v = 12;
     }
     if (s.v < 13) s.v = 13;
+    if (s.v < 14) {
+      const set2 = (re, q) => { const a = s.activities.find(x => re.test(x.name)); if (a) a.quick2 = q; };
+      set2(/push/i, [20]);
+      set2(/sit/i, [20]);
+      s.v = 14;
+    }
     if (s.v < 9) {
       s.activities.forEach(a => { if (a.plan) delete a.plan.cap; });
       s.v = 9;
@@ -1291,7 +1297,7 @@
   }
 
   function quickRow(act, isMeasure) {
-    let quicks = act.quick || [];
+    let quicks = [...(act.quick || []), ...(act.quick2 || [])].sort((a, b) => a - b);
     let pyramidHtml = '';
     if (act.plan && act.plan.id === 'armstrong') {
       const dow = new Date().getDay();
@@ -1931,9 +1937,34 @@
   }
 
   /* ================= actions ================= */
-  function startRest(act) {
+  /* ---- rest intervals: scaled to the set just logged ----
+     Armstrong pull-ups follow the program's own prescriptions exactly (90s max-set day,
+     10 sec per rep on pyramid day, 60s on training-set days). Everything else scales
+     per rep, floored at 30s (NSCA endurance guidance) and capped at 2 min so rests stay
+     in the endurance band rather than drifting toward strength work. */
+  function restSecondsFor(act, amount) {
+    const reps = Math.max(1, Math.round(amount));
+    if (act.plan && act.plan.id === 'armstrong') {
+      const dow = keyToDate(todayKey()).getDay();
+      if (dow === 1) return 90;                 // 5 max sets
+      if (dow === 2) return reps * 10;          // pyramid: 10 sec per rep of the set just done
+      if (dow === 3 || dow === 4) return 60;    // 3-grip and max training sets
+      if (dow === 5) return 60;                 // repeat hardest
+      return reps * 10;
+    }
+    if (act.kind === 'duration') {              // holds: ~3:4 work-to-rest
+      return clamp(Math.round(amount * 0.75 / 5) * 5, 30, 90);
+    }
+    const perRep = /push/i.test(act.name) ? 2.4
+      : /sit-?up|crunch|leg raise|flutter/i.test(act.name) ? 2.0
+      : /pull|chin/i.test(act.name) ? 12
+      : 2.2;
+    return clamp(Math.round(reps * perRep / 5) * 5, 30, 120);
+  }
+
+  function startRest(act, amount) {
     if (act.group !== 'calisthenics' && act.group !== 'abs') return;
-    const secsLeft = act.plan && act.plan.id === 'armstrong' ? 90 : 60;
+    const secsLeft = restSecondsFor(act, amount);
     restTimer = { actId: act.id, label: act.name, end: Date.now() + secsLeft * 1000 };
     updateRestPill();
   }
@@ -1960,7 +1991,7 @@
     if (mins > 0) entry.mins = mins;
     if (loadToggle[actId]) entry.load = loadToggle[actId];
     state.entries.push(entry);
-    startRest(act);
+    startRest(act, amount);
     save();
     if (act.kind === 'measure') {
       toast('Recorded ' + fmt(amount) + ' ' + act.unit);
