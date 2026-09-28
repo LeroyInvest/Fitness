@@ -387,7 +387,7 @@
   'use strict';
 
   /* ================= storage ================= */
-  const APP_VERSION = '42';
+  const APP_VERSION = '43';
   const LS_KEY = 'fitlog.v1';
 
   /* Firebase project config — public identifiers, secured by Firestore rules (auth-gated per-user docs) */
@@ -415,7 +415,7 @@
 
   /* kinds: count | distance | duration -> daily SUM toward goal
             measure -> latest value per day, goal is a target level    */
-  const GROUPS = ['calisthenics', 'abs', 'cardio', 'health'];
+  const GROUPS = ['cardio', 'calisthenics', 'abs', 'health'];
   const GROUP_LABEL = { calisthenics: 'Calisthenics', abs: 'Abs', cardio: 'Swim & Run', health: 'Health' };
 
   const DEFAULT_PLANS = {
