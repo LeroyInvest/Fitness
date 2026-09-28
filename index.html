@@ -387,7 +387,7 @@
   'use strict';
 
   /* ================= storage ================= */
-  const APP_VERSION = '41';
+  const APP_VERSION = '42';
   const LS_KEY = 'fitlog.v1';
 
   /* Firebase project config — public identifiers, secured by Firestore rules (auth-gated per-user docs) */
@@ -1459,8 +1459,9 @@
   }
 
   function renderToday() {
+    const water = state.activities.find(a => /water/i.test(a.name));
     const sections = GROUPS.map(g => {
-      const acts = state.activities.filter(a => (a.group || 'calisthenics') === g);
+      const acts = state.activities.filter(a => (a.group || 'calisthenics') === g && !(water && a.id === water.id));
       if (!acts.length) return '';
       return `<div class="eyebrow">${GROUP_LABEL[g]}</div>` + acts.map(compactCard).join('');
     }).join('');
@@ -1469,7 +1470,8 @@
       ${(FIREBASE_CONFIG ? !cloudActive() : !syncCfg.get().token) ? (!state.entries.length
         ? `<div class="warnbanner"><strong>Not synced.</strong> ${FIREBASE_CONFIG ? 'Sign in with Google in Settings and your whole log restores itself.' : 'Had sync before? Open your setup link or paste your token in Settings → GitHub sync and your whole log restores itself.'}</div>`
         : `<div class="warnbanner"><strong>Not synced</strong> — entries live only on this device and are lost if the app is removed. ${FIREBASE_CONFIG ? 'Sign in with Google in Settings.' : 'Connect in Settings → GitHub sync.'}</div>`) : ''}
-      ${sections || `<div class="empty">No activities yet — add one in Settings.</div>`}
+      ${water ? `<div class="eyebrow">Hydration</div>` + compactCard(water) : ''}
+      ${sections || (water ? '' : `<div class="empty">No activities yet — add one in Settings.</div>`)}
       ${dailyBanner()}
     `;
   }
